@@ -1,0 +1,3464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dead Moose Cafe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Crimson+Text:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --moose-brown: #3d2817;
+            --wood-tan: #d4a574;
+            --forest-green: #2d4a3e;
+            --cream: #f5f1e8;
+            --burnt-orange: #d95d39;
+            --deep-shadow: #1a1410;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Text', serif;
+            background: linear-gradient(135deg, var(--cream) 0%, #e8dcc8 100%);
+            color: var(--moose-brown);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--moose-brown);
+            color: var(--cream);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 4px solid var(--wood-tan);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--burnt-orange);
+            color: var(--cream);
+            border: none;
+            padding: 0.8rem 2rem;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover {
+            background: var(--forest-green);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn.secondary {
+            background: var(--forest-green);
+        }
+
+        .btn.secondary:hover {
+            background: var(--wood-tan);
+            color: var(--moose-brown);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-bar {
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 3px solid var(--moose-brown);
+            border-radius: 8px;
+            background: white;
+            font-family: 'Crimson Text', serif;
+        }
+
+        .time-zone-selector {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .time-zone-btn {
+            padding: 1rem 2rem;
+            background: white;
+            border: 3px solid var(--moose-brown);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .time-zone-btn.active {
+            background: var(--moose-brown);
+            color: var(--cream);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .menu-item {
+            background: white;
+            border: 3px solid var(--moose-brown);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .menu-item.sold-out {
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .menu-item.sold-out::after {
+            content: 'SOLD OUT';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            background: var(--burnt-orange);
+            color: white;
+            padding: 0.5rem 2rem;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            border: 3px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .menu-item h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--moose-brown);
+        }
+
+        .menu-item .price {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--burnt-orange);
+            margin: 0.5rem 0;
+        }
+
+        .menu-item .description {
+            font-size: 1rem;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+
+        .menu-item .time-zones {
+            font-size: 0.9rem;
+            color: var(--forest-green);
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+
+        .order-btn {
+            width: 100%;
+            margin-top: 1rem;
+            background: var(--forest-green);
+        }
+
+        .order-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .cart {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--moose-brown);
+            color: var(--cream);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            min-width: 250px;
+            z-index: 1000;
+        }
+
+        .cart h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--wood-tan);
+            padding-bottom: 0.5rem;
+        }
+
+        .cart-items {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .cart-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .cart-total {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--wood-tan);
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 4rem auto;
+            background: white;
+            padding: 2rem;
+            border: 3px solid var(--moose-brown);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        .login-form h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--moose-brown);
+            border-radius: 6px;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+        }
+
+        .dashboard {
+            background: white;
+            border: 3px solid var(--moose-brown);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .dashboard h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--moose-brown);
+            border-bottom: 3px solid var(--wood-tan);
+            padding-bottom: 0.5rem;
+        }
+
+        .orders-list {
+            margin: 2rem 0;
+        }
+
+        .order-card {
+            background: var(--cream);
+            border: 2px solid var(--moose-brown);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .order-card h4 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .order-items {
+            margin: 1rem 0;
+        }
+
+        .order-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .host-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .control-section {
+            background: var(--cream);
+            border: 2px solid var(--moose-brown);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .control-section h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--moose-brown);
+        }
+
+        .menu-item-edit {
+            background: white;
+            border: 2px solid var(--moose-brown);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .menu-item-edit h4 {
+            font-family: 'Bebas Neue', sans-serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-item-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .menu-item-controls button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .menu-item-controls input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 2px solid var(--moose-brown);
+            border-radius: 4px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--forest-green);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .status-badge.in-stock {
+            background: var(--forest-green);
+            color: white;
+        }
+
+        .status-badge.sold-out {
+            background: var(--burnt-orange);
+            color: white;
+        }
+
+        .status-badge.off-market {
+            background: #666;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .cart {
+                bottom: 1rem;
+                right: 1rem;
+                min-width: 200px;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦌 The Dead Moose Cafe</h1>
+        <p class="subtitle">Where wilderness meets comfort</p>
+        <div id="user-info" style="display: none; margin-top: 1rem; font-size: 1rem; opacity: 0.9;">
+            Logged in as: <strong><span id="current-user-display"></span></strong>
+        </div>
+        <div class="nav-buttons" id="main-nav" style="display: none;">
+            <button class="btn" onclick="app.showView('customer')">Order Food</button>
+            <button class="btn secondary" onclick="app.showView('host')">Host Dashboard</button>
+            <button class="btn" onclick="app.showView('games')">Games</button>
+            <button class="btn" onclick="app.showView('wildlife')">Wildlife Scenery</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Welcome/Login Screen -->
+        <div id="welcome-view" class="view active">
+            <div class="login-form">
+                <h2>Welcome to The Dead Moose Cafe!</h2>
+                <p style="text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                    Please enter your details to continue
+                </p>
+                <div class="form-group">
+                    <label>Your Name/Username</label>
+                    <input type="text" id="user-name-input" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Create a Password</label>
+                    <input type="password" id="user-password-input" placeholder="Create a password">
+                </div>
+                <button class="btn" style="width: 100%;" onclick="app.enterSite()">Enter Cafe</button>
+                <p style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--forest-green);">
+                    Your password will be saved for this session
+                </p>
+            </div>
+        </div>
+
+        <!-- Customer View -->
+        <div id="customer-view" class="view active">
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search for coffee, food, or beverages..." oninput="app.searchMenu()">
+            </div>
+
+            <div class="time-zone-selector">
+                <button class="time-zone-btn active" onclick="app.filterByTimeZone('all')">All Day</button>
+                <button class="time-zone-btn" onclick="app.filterByTimeZone('breakfast')">Breakfast</button>
+                <button class="time-zone-btn" onclick="app.filterByTimeZone('lunch')">Lunch</button>
+                <button class="time-zone-btn" onclick="app.filterByTimeZone('dinner')">Dinner</button>
+            </div>
+
+            <div id="menu-grid" class="menu-grid"></div>
+        </div>
+
+        <!-- Games View -->
+        <div id="games-view" class="view">
+            <div class="dashboard">
+                <h2>🎮 Moose Arcade</h2>
+                <p style="text-align: center; margin-bottom: 2rem; font-size: 1.2rem;">
+                    Choose your game!
+                </p>
+                
+                <!-- Game Selection -->
+                <div id="game-selection" class="host-controls" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="control-section" style="text-align: center; cursor: pointer;" onclick="app.showGame('hunter')">
+                        <h3 style="margin-bottom: 1rem;">🎯 Moose Hunter</h3>
+                        <p style="margin-bottom: 1rem;">Hunt moose with arrow keys and spacebar!</p>
+                        <button class="btn" style="width: 100%;">Play Moose Hunter</button>
+                    </div>
+                    <div class="control-section" style="text-align: center; cursor: pointer;" onclick="app.showGame('maker')">
+                        <h3 style="margin-bottom: 1rem;">🎹 Moose Maker Deluxe</h3>
+                        <p style="margin-bottom: 1rem;">Create melodies on the piano!</p>
+                        <button class="btn" style="width: 100%;">Play Moose Maker</button>
+                    </div>
+                    <div class="control-section" style="text-align: center; cursor: pointer;" onclick="app.showGame('brothers')">
+                        <h3 style="margin-bottom: 1rem;">🦌 Super Moose Brothers</h3>
+                        <p style="margin-bottom: 1rem;">Platform adventure with moose hero!</p>
+                        <button class="btn" style="width: 100%;">Play Super Moose</button>
+                    </div>
+                </div>
+
+                <!-- Moose Hunter Game -->
+                <div id="hunter-game" style="display: none;">
+                    <button class="btn secondary" onclick="app.backToGameSelection()" style="margin-bottom: 1rem;">← Back to Games</button>
+                    <h2>🎯 Moose Hunter</h2>
+                    <p style="text-align: center; margin-bottom: 1rem; font-size: 1.1rem;">
+                        Use <strong>Arrow Keys</strong> to move • Press <strong>Space</strong> to shoot
+                    </p>
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <div style="font-size: 1.3rem; font-family: 'Bebas Neue', sans-serif;">
+                            Score: <span id="game-score" style="color: var(--burnt-orange);">0</span> | 
+                            High Score: <span id="game-high-score" style="color: var(--forest-green);">0</span>
+                        </div>
+                    </div>
+                    <canvas id="game-canvas" width="800" height="600" style="
+                        display: block;
+                        margin: 0 auto;
+                        border: 4px solid var(--moose-brown);
+                        border-radius: 8px;
+                        background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 100%);
+                        max-width: 100%;
+                        height: auto;
+                    "></canvas>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button class="btn" onclick="game.restart()">Restart Game</button>
+                    </div>
+                </div>
+
+                <!-- Moose Maker Deluxe Game -->
+                <div id="maker-game" style="display: none;">
+                    <button class="btn secondary" onclick="app.backToGameSelection()" style="margin-bottom: 1rem;">← Back to Games</button>
+                    <h2>🎹 Moose Maker Deluxe</h2>
+                    <p style="text-align: center; margin-bottom: 1rem; font-size: 1.1rem;">
+                        Click keys or use keyboard to create your melody!
+                    </p>
+                    
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <div id="current-note-display" style="font-size: 2rem; font-family: 'Bebas Neue', sans-serif; color: var(--burnt-orange); min-height: 3rem; display: flex; align-items: center; justify-content: center;">
+                            Ready to play!
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <button class="btn" onclick="mooseMaker.playMelody()" style="margin-right: 0.5rem;">▶️ Play Melody</button>
+                        <button class="btn secondary" onclick="mooseMaker.clearMelody()">🗑️ Clear</button>
+                    </div>
+
+                    <div id="melody-display" style="
+                        background: var(--cream);
+                        border: 3px solid var(--moose-brown);
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        min-height: 60px;
+                        font-family: 'Bebas Neue', sans-serif;
+                        font-size: 1.2rem;
+                        text-align: center;
+                    ">
+                        Your melody will appear here...
+                    </div>
+
+                    <!-- Piano Keys -->
+                    <div id="piano-container" style="
+                        display: flex;
+                        justify-content: center;
+                        align-items: flex-end;
+                        margin: 2rem auto;
+                        max-width: 900px;
+                        height: 300px;
+                        position: relative;
+                    "></div>
+
+                    <div style="text-align: center; margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+                        Keyboard shortcuts: Q W E R T Y U I O P for white keys
+                    </div>
+                </div>
+
+                <!-- Super Moose Brothers Game -->
+                <div id="brothers-game" style="display: none;">
+                    <button class="btn secondary" onclick="app.backToGameSelection()" style="margin-bottom: 1rem;">← Back to Games</button>
+                    <h2>🦌 Super Moose Brothers</h2>
+                    <p style="text-align: center; margin-bottom: 1rem; font-size: 1.1rem;">
+                        <strong>WASD</strong> to move and jump • <strong>Space</strong> to jump • Collect coffee beans • Get coffee cups for power!
+                    </p>
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <div style="font-size: 1.3rem; font-family: 'Bebas Neue', sans-serif;">
+                            ☕ Beans: <span id="moose-beans" style="color: var(--burnt-orange);">0</span> | 
+                            Lives: <span id="moose-lives" style="color: var(--forest-green);">3</span>
+                        </div>
+                    </div>
+                    <canvas id="moose-canvas" width="800" height="480" style="
+                        display: block;
+                        margin: 0 auto;
+                        border: 4px solid var(--moose-brown);
+                        border-radius: 8px;
+                        background: #5c94fc;
+                        max-width: 100%;
+                        height: auto;
+                    "></canvas>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button class="btn" onclick="mooseBros.restart()">Restart Level</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wildlife Scenery View -->
+        <div id="wildlife-view" class="view">
+            <div class="dashboard">
+                <h2>🌲 Wildlife Scenery</h2>
+                <p style="text-align: center; margin-bottom: 2rem; font-size: 1.2rem;">
+                    Experience the peaceful wilderness
+                </p>
+
+                <div class="host-controls" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    
+                    <!-- Forest Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">🌲 Deep Forest</h3>
+                        <canvas id="forest-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('forest')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                    <!-- Moose Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">🦌 Moose Meadow</h3>
+                        <canvas id="moose-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('moose')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                    <!-- Firefly Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">✨ Firefly Night</h3>
+                        <canvas id="firefly-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('firefly')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                    <!-- Squirrel Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">🐿️ Squirrel Grove</h3>
+                        <canvas id="squirrel-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('squirrel')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                    <!-- Mushroom Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">🍄 Mushroom Garden</h3>
+                        <canvas id="mushroom-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('mushroom')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                    <!-- Waterfall Scene -->
+                    <div class="control-section">
+                        <h3 style="text-align: center; margin-bottom: 1rem;">💧 Forest Waterfall</h3>
+                        <canvas id="waterfall-canvas" width="400" height="300" style="
+                            width: 100%;
+                            border: 3px solid var(--moose-brown);
+                            border-radius: 8px;
+                            cursor: pointer;
+                        " onclick="wildlife.playScene('waterfall')"></canvas>
+                        <p style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem;">Click to play/pause</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Host Dashboard -->
+        <div id="host-view" class="view">
+            <div class="dashboard">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Host Dashboard</h2>
+                </div>
+
+                <div class="host-controls">
+                    <!-- Orders Section -->
+                    <div class="control-section" style="grid-column: 1 / -1;">
+                        <h3>📋 Current Orders</h3>
+                        <div id="orders-list" class="orders-list"></div>
+                    </div>
+
+                    <!-- Menu Management -->
+                    <div class="control-section" style="grid-column: 1 / -1;">
+                        <h3>☕ Menu Management</h3>
+                        <div id="menu-management"></div>
+                    </div>
+
+                    <!-- Transfer Host -->
+                    <div class="control-section">
+                        <h3>👤 Transfer Host Privileges</h3>
+                        <p style="margin-bottom: 1rem;">Transfer control to another user. They will need this password to access the host dashboard.</p>
+                        <div class="form-group">
+                            <label>New Host Name</label>
+                            <input type="text" id="new-host-name" placeholder="Enter name (optional, for display)">
+                        </div>
+                        <div class="form-group">
+                            <label>Set Host Password</label>
+                            <input type="password" id="new-host-password" placeholder="Create a password for new host">
+                        </div>
+                        <button class="btn" onclick="app.transferHost()">Transfer Host Privileges</button>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--forest-green);">
+                            <strong>Current Host:</strong> <span id="current-host-name">You (Original Host)</span>
+                        </p>
+                    </div>
+
+                    <!-- Active Coupons -->
+                    <div class="control-section" style="grid-column: 1 / -1;">
+                        <h3>🎟️ Active Coupons</h3>
+                        <div id="coupons-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupon Modal -->
+    <div id="coupon-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 2rem; border-radius: 12px; border: 4px solid var(--moose-brown); max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h2 style="font-family: 'Bebas Neue', sans-serif; font-size: 2rem; margin-bottom: 1rem; color: var(--moose-brown);">
+                Create Coupon
+            </h2>
+            <p style="margin-bottom: 1rem;">Creating coupon for: <strong id="coupon-username"></strong></p>
+            
+            <div class="form-group">
+                <label>Coupon Type</label>
+                <select id="coupon-type" onchange="app.toggleDiscountSection()" style="width: 100%; padding: 0.8rem; border: 2px solid var(--moose-brown); border-radius: 6px; font-family: 'Crimson Text', serif; font-size: 1rem;">
+                    <option value="free">Free Order</option>
+                    <option value="discount">Discount</option>
+                </select>
+            </div>
+
+            <div id="discount-section" style="display: none;">
+                <div class="form-group">
+                    <label>Discount Percentage (%)</label>
+                    <input type="number" id="discount-amount" min="1" max="100" value="50" style="width: 100%; padding: 0.8rem; border: 2px solid var(--moose-brown); border-radius: 6px;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Expiration Duration</label>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.5rem;">
+                    <input type="number" id="expiration-value" min="0" value="1" style="padding: 0.8rem; border: 2px solid var(--moose-brown); border-radius: 6px;">
+                    <select id="expiration-unit" style="padding: 0.8rem; border: 2px solid var(--moose-brown); border-radius: 6px; font-family: 'Crimson Text', serif;">
+                        <option value="seconds">Seconds</option>
+                        <option value="minutes">Minutes</option>
+                        <option value="hours" selected>Hours</option>
+                        <option value="days">Days</option>
+                        <option value="years">Years</option>
+                        <option value="decades">Decades</option>
+                        <option value="infinite">Infinite</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                <button class="btn" onclick="app.createCoupon()" style="flex: 1;">Create Coupon</button>
+                <button class="btn secondary" onclick="app.closeCouponModal()" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart -->
+    <div id="cart" class="cart" style="display: none;">
+        <h3>Your Order</h3>
+        <div id="cart-items" class="cart-items"></div>
+        
+        <div id="coupon-display" style="display: none; margin: 1rem 0; padding: 0.8rem; background: var(--wood-tan); border-radius: 6px; color: var(--moose-brown);">
+            <div style="font-weight: 600; margin-bottom: 0.3rem;">🎟️ Active Coupon</div>
+            <div id="coupon-details" style="font-size: 0.9rem;"></div>
+        </div>
+
+        <div class="cart-total">
+            <div id="original-total" style="display: none; text-decoration: line-through; opacity: 0.6; font-size: 1rem; margin-bottom: 0.3rem;"></div>
+            Total: $<span id="cart-total">0.00</span>
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 1rem;" onclick="app.placeOrder()">Place Order</button>
+        <button class="btn secondary" style="width: 100%; margin-top: 0.5rem;" onclick="app.clearCart()">Clear Cart</button>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCoVyfVimZ15ebgoZAHMzPXxgNBnx7epMo",
+            authDomain: "dead-moose-cafe.firebaseapp.com",
+            databaseURL: "https://dead-moose-cafe-default-rtdb.firebaseio.com",
+            projectId: "dead-moose-cafe",
+            storageBucket: "dead-moose-cafe.firebasestorage.app",
+            messagingSenderId: "104638396025",
+            appId: "1:104638396025:web:75186c230ad0117a6306a8"
+        };
+
+        // Initialize Firebase
+        let database = null;
+        let useFirebase = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            useFirebase = true;
+            console.log('🔥 Firebase connected! Multi-user mode enabled.');
+        } catch (error) {
+            console.log('⚠️ Firebase not available, using fallback storage');
+            useFirebase = false;
+        }
+
+        const app = {
+            currentView: 'welcome',
+            currentUser: null,
+            userPassword: null,
+            cart: [],
+            currentTimeZone: 'all',
+            searchQuery: '',
+            
+            defaultMenu: [
+                // Breakfast
+                { id: 1, name: 'Moose Morning Coffee', price: 3.50, description: 'Rich dark roast coffee', timeZones: ['breakfast', 'lunch', 'dinner'], category: 'coffee', status: 'in-stock' },
+                { id: 2, name: 'Wilderness Espresso', price: 4.00, description: 'Double shot espresso', timeZones: ['breakfast', 'lunch', 'dinner'], category: 'coffee', status: 'in-stock' },
+                { id: 3, name: 'Lumberjack Breakfast', price: 12.99, description: 'Pancakes, eggs, bacon, and sausage', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 4, name: 'Forest Berry Oatmeal', price: 7.99, description: 'Steel-cut oats with fresh berries', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 5, name: 'Trail Mix Granola Bowl', price: 8.50, description: 'Greek yogurt with house granola', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 6, name: 'Orange Juice', price: 3.99, description: 'Freshly squeezed', timeZones: ['breakfast'], category: 'beverage', status: 'in-stock' },
+                { id: 17, name: 'Maple Bacon Waffle', price: 10.99, description: 'Belgian waffle with crispy bacon and maple syrup', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 18, name: 'Sunrise Burrito', price: 9.99, description: 'Scrambled eggs, cheese, peppers, and salsa', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 19, name: 'French Toast Combo', price: 11.50, description: 'Thick-cut French toast with fruit', timeZones: ['breakfast'], category: 'food', status: 'in-stock' },
+                { id: 20, name: 'Cappuccino', price: 4.50, description: 'Espresso with steamed milk foam', timeZones: ['breakfast', 'lunch', 'dinner'], category: 'coffee', status: 'in-stock' },
+                
+                // Lunch
+                { id: 7, name: 'Mountain Burger', price: 14.99, description: 'Half-pound burger with all the fixings', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 8, name: 'Grizzly Grilled Cheese', price: 9.99, description: 'Three cheese blend on sourdough', timeZones: ['lunch'], category: 'food', status: 'in-stock' },
+                { id: 9, name: 'Caesar Salad', price: 11.99, description: 'Romaine with house caesar dressing', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 10, name: 'Iced Moose Tea', price: 3.50, description: 'House blend iced tea', timeZones: ['lunch', 'dinner'], category: 'beverage', status: 'in-stock' },
+                { id: 11, name: 'Lemonade', price: 3.99, description: 'Fresh squeezed lemonade', timeZones: ['lunch', 'dinner'], category: 'beverage', status: 'in-stock' },
+                { id: 21, name: 'Club Sandwich', price: 12.99, description: 'Triple-decker turkey, bacon, and avocado', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 22, name: 'BBQ Pulled Pork', price: 13.99, description: 'Slow-cooked pork with coleslaw', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 23, name: 'Chicken Wrap', price: 10.99, description: 'Grilled chicken with veggies in a tortilla', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 24, name: 'Tomato Soup & Bread', price: 8.99, description: 'Creamy tomato soup with garlic bread', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 25, name: 'Garden Veggie Burger', price: 12.99, description: 'House-made veggie patty with toppings', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                
+                // Dinner
+                { id: 12, name: 'Wilderness Steak', price: 24.99, description: '12oz ribeye with vegetables', timeZones: ['dinner'], category: 'food', status: 'in-stock' },
+                { id: 13, name: 'Salmon Supreme', price: 19.99, description: 'Grilled salmon with rice pilaf', timeZones: ['dinner'], category: 'food', status: 'in-stock' },
+                { id: 14, name: 'Pasta Primavera', price: 15.99, description: 'Fresh vegetables with penne', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 15, name: 'Red Wine', price: 8.00, description: 'House red wine', timeZones: ['dinner'], category: 'beverage', status: 'in-stock' },
+                { id: 16, name: 'Craft Beer', price: 6.50, description: 'Local craft beer selection', timeZones: ['lunch', 'dinner'], category: 'beverage', status: 'in-stock' },
+                { id: 26, name: 'BBQ Ribs Platter', price: 21.99, description: 'Full rack of ribs with fries and beans', timeZones: ['dinner'], category: 'food', status: 'in-stock' },
+                { id: 27, name: 'Chicken Alfredo', price: 16.99, description: 'Fettuccine with creamy alfredo sauce', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 28, name: 'Fish & Chips', price: 15.99, description: 'Beer-battered cod with seasoned fries', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 29, name: 'Meatloaf Dinner', price: 14.99, description: 'Home-style meatloaf with mashed potatoes', timeZones: ['dinner'], category: 'food', status: 'in-stock' },
+                { id: 30, name: 'Grilled Chicken Breast', price: 17.99, description: 'Marinated chicken with roasted vegetables', timeZones: ['dinner'], category: 'food', status: 'in-stock' },
+                
+                // Desserts & Beverages
+                { id: 31, name: 'Chocolate Brownie', price: 6.99, description: 'Warm brownie with ice cream', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 32, name: 'Apple Pie', price: 5.99, description: 'Classic apple pie with cinnamon', timeZones: ['lunch', 'dinner'], category: 'food', status: 'in-stock' },
+                { id: 33, name: 'Milkshake', price: 5.50, description: 'Chocolate, vanilla, or strawberry', timeZones: ['breakfast', 'lunch', 'dinner'], category: 'beverage', status: 'in-stock' },
+                { id: 34, name: 'Hot Chocolate', price: 4.00, description: 'Rich hot chocolate with whipped cream', timeZones: ['breakfast', 'lunch', 'dinner'], category: 'beverage', status: 'in-stock' },
+            ],
+
+            async init() {
+                await this.loadData();
+                // Check if user already has a session
+                const savedUser = sessionStorage.getItem('cafe-user');
+                const savedPassword = sessionStorage.getItem('cafe-password');
+                
+                if (savedUser && savedPassword) {
+                    this.currentUser = savedUser;
+                    this.userPassword = savedPassword;
+                    document.getElementById('current-user-display').textContent = savedUser;
+                    document.getElementById('user-info').style.display = 'block';
+                    document.getElementById('main-nav').style.display = 'flex';
+                    this.showView('customer');
+                } else {
+                    this.showView('welcome');
+                }
+                
+                this.renderMenu();
+            },
+
+            enterSite() {
+                const username = document.getElementById('user-name-input').value.trim();
+                const password = document.getElementById('user-password-input').value.trim();
+
+                if (!username) {
+                    this.showNotification('Please enter your name/username');
+                    return;
+                }
+
+                if (!password) {
+                    this.showNotification('Please create a password');
+                    return;
+                }
+
+                // Save to session storage
+                sessionStorage.setItem('cafe-user', username);
+                sessionStorage.setItem('cafe-password', password);
+
+                this.currentUser = username;
+                this.userPassword = password;
+
+                // Show user info in header
+                document.getElementById('current-user-display').textContent = username;
+                document.getElementById('user-info').style.display = 'block';
+
+                // Show navigation and switch to customer view
+                document.getElementById('main-nav').style.display = 'flex';
+                this.showView('customer');
+                this.showNotification(`Welcome, ${username}!`);
+            },
+
+            async loadData() {
+                // Always start with default menu
+                this.menu = [...this.defaultMenu];
+                
+                // Try to load saved menu if storage is available
+                if (window.storage) {
+                    try {
+                        const menuResult = await window.storage.get('menu-items');
+                        if (menuResult && menuResult.value) {
+                            this.menu = JSON.parse(menuResult.value);
+                        } else {
+                            // Save default menu for first time
+                            await window.storage.set('menu-items', JSON.stringify(this.menu));
+                        }
+                    } catch (error) {
+                        console.log('Using default menu - storage not yet available');
+                    }
+
+                    // Try to load host info
+                    try {
+                        const hostInfoResult = await window.storage.get('host-info');
+                        if (hostInfoResult && hostInfoResult.value) {
+                            const hostInfo = JSON.parse(hostInfoResult.value);
+                            const hostNameEl = document.getElementById('current-host-name');
+                            if (hostNameEl && hostInfo.name) {
+                                hostNameEl.textContent = hostInfo.name;
+                            }
+                        }
+                    } catch (error) {
+                        console.log('No host info yet');
+                    }
+                } else {
+                    console.log('Storage not available - using defaults');
+                }
+            },
+
+            async saveMenu() {
+                if (!window.storage) {
+                    console.log('Storage not available');
+                    return;
+                }
+                try {
+                    await window.storage.set('menu-items', JSON.stringify(this.menu));
+                } catch (error) {
+                    console.log('Could not save menu:', error);
+                }
+            },
+
+            showView(viewName) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${viewName}-view`).classList.add('active');
+                this.currentView = viewName;
+
+                if (viewName === 'host') {
+                    this.renderHostDashboard();
+                } else if (viewName === 'games') {
+                    // Show game selection by default
+                    this.backToGameSelection();
+                } else if (viewName === 'wildlife') {
+                    // Initialize wildlife scenes
+                    setTimeout(() => wildlife.init(), 100);
+                }
+            },
+
+            showGame(gameName) {
+                document.getElementById('game-selection').style.display = 'none';
+                if (gameName === 'hunter') {
+                    document.getElementById('hunter-game').style.display = 'block';
+                    document.getElementById('maker-game').style.display = 'none';
+                    document.getElementById('brothers-game').style.display = 'none';
+                    game.start();
+                } else if (gameName === 'maker') {
+                    document.getElementById('hunter-game').style.display = 'none';
+                    document.getElementById('maker-game').style.display = 'block';
+                    document.getElementById('brothers-game').style.display = 'none';
+                    mooseMaker.init();
+                } else if (gameName === 'brothers') {
+                    document.getElementById('hunter-game').style.display = 'none';
+                    document.getElementById('maker-game').style.display = 'none';
+                    document.getElementById('brothers-game').style.display = 'block';
+                    mooseBros.init();
+                }
+            },
+
+            backToGameSelection() {
+                document.getElementById('game-selection').style.display = 'grid';
+                document.getElementById('hunter-game').style.display = 'none';
+                document.getElementById('maker-game').style.display = 'none';
+                document.getElementById('brothers-game').style.display = 'none';
+            },
+
+            renderMenu() {
+                const grid = document.getElementById('menu-grid');
+                const filteredMenu = this.menu.filter(item => {
+                    const matchesTimeZone = this.currentTimeZone === 'all' || item.timeZones.includes(this.currentTimeZone);
+                    const matchesSearch = this.searchQuery === '' || 
+                        item.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                        item.category.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                        item.description.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    return matchesTimeZone && matchesSearch && item.status !== 'off-market';
+                });
+
+                grid.innerHTML = filteredMenu.map(item => `
+                    <div class="menu-item ${item.status === 'sold-out' ? 'sold-out' : ''}">
+                        <h3>${item.name}</h3>
+                        <p class="description">${item.description}</p>
+                        <p class="price">$${item.price.toFixed(2)}</p>
+                        <p class="time-zones">Available: ${item.timeZones.map(tz => tz.charAt(0).toUpperCase() + tz.slice(1)).join(', ')}</p>
+                        <button class="btn order-btn" onclick="app.addToCart(${item.id})" ${item.status === 'sold-out' ? 'disabled' : ''}>
+                            ${item.status === 'sold-out' ? 'Sold Out' : 'Add to Order'}
+                        </button>
+                    </div>
+                `).join('');
+            },
+
+            searchMenu() {
+                this.searchQuery = document.getElementById('search-input').value;
+                this.renderMenu();
+            },
+
+            filterByTimeZone(zone) {
+                this.currentTimeZone = zone;
+                document.querySelectorAll('.time-zone-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                this.renderMenu();
+            },
+
+            addToCart(itemId) {
+                const item = this.menu.find(i => i.id === itemId);
+                if (item && item.status === 'in-stock') {
+                    const existingItem = this.cart.find(i => i.id === itemId);
+                    if (existingItem) {
+                        existingItem.quantity++;
+                    } else {
+                        this.cart.push({ ...item, quantity: 1 });
+                    }
+                    this.updateCart();
+                    this.showNotification(`Added ${item.name} to cart`);
+                }
+            },
+
+            async updateCart() {
+                const cartDiv = document.getElementById('cart');
+                const cartItems = document.getElementById('cart-items');
+                const cartTotal = document.getElementById('cart-total');
+                const originalTotalEl = document.getElementById('original-total');
+                const couponDisplay = document.getElementById('coupon-display');
+                const couponDetails = document.getElementById('coupon-details');
+
+                if (this.cart.length === 0) {
+                    cartDiv.style.display = 'none';
+                    return;
+                }
+
+                cartDiv.style.display = 'block';
+                cartItems.innerHTML = this.cart.map(item => `
+                    <div class="cart-item">
+                        <strong>${item.name}</strong> x${item.quantity}<br>
+                        $${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                `).join('');
+
+                const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                // Check for active coupon
+                const coupon = await this.loadUserCoupon();
+                let finalTotal = total;
+
+                if (coupon) {
+                    const discount = coupon.discount;
+                    finalTotal = total * (1 - discount / 100);
+                    
+                    // Show original price crossed out
+                    originalTotalEl.textContent = `Original: $${total.toFixed(2)}`;
+                    originalTotalEl.style.display = 'block';
+                    
+                    // Show coupon details
+                    couponDisplay.style.display = 'block';
+                    couponDetails.innerHTML = `
+                        ${coupon.type === 'free' ? '🎉 FREE ORDER!' : `${coupon.discount}% discount applied!`}<br>
+                        <span style="font-size: 0.85rem;">Expires: ${coupon.expirationText}</span>
+                    `;
+                } else {
+                    originalTotalEl.style.display = 'none';
+                    couponDisplay.style.display = 'none';
+                }
+
+                cartTotal.textContent = finalTotal.toFixed(2);
+            },
+
+            async placeOrder() {
+                if (this.cart.length === 0) return;
+
+                const order = {
+                    id: Date.now(),
+                    username: this.currentUser || 'Guest',
+                    items: [...this.cart],
+                    total: this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    timestamp: new Date().toISOString(),
+                    status: 'pending'
+                };
+
+                console.log('=== PLACING ORDER ===');
+                console.log('Order:', order);
+
+                try {
+                    if (useFirebase && database) {
+                        // Use Firebase for multi-user support
+                        await database.ref('orders/' + order.id).set(order);
+                        console.log('✅ Order saved to Firebase! All users can see it.');
+                    } else if (window.storage) {
+                        // Use Claude storage
+                        let orders = [];
+                        const ordersResult = await window.storage.get('cafe-orders', true);
+                        if (ordersResult && ordersResult.value) {
+                            orders = JSON.parse(ordersResult.value);
+                        }
+                        orders.push(order);
+                        await window.storage.set('cafe-orders', JSON.stringify(orders), true);
+                        console.log('Order saved to shared storage');
+                    } else {
+                        // Fallback to localStorage
+                        const stored = localStorage.getItem('cafe-orders') || '[]';
+                        const orders = JSON.parse(stored);
+                        orders.push(order);
+                        localStorage.setItem('cafe-orders', JSON.stringify(orders));
+                        console.log('⚠️ Order saved locally only (no multi-user)');
+                    }
+                    
+                    this.showNotification('Order placed successfully!');
+                    this.cart = [];
+                    await this.updateCart();
+                } catch (error) {
+                    console.error('ERROR PLACING ORDER:', error);
+                    this.showNotification('Order placed (with errors)');
+                    this.cart = [];
+                    await this.updateCart();
+                }
+            },
+
+            async clearCart() {
+                this.cart = [];
+                await this.updateCart();
+            },
+
+            async renderHostDashboard() {
+                console.log('=== LOADING HOST DASHBOARD ===');
+                
+                const ordersList = document.getElementById('orders-list');
+                
+                try {
+                    let orders = [];
+                    
+                    if (useFirebase && database) {
+                        // Load from Firebase with real-time updates
+                        const snapshot = await database.ref('orders').once('value');
+                        const ordersObj = snapshot.val();
+                        
+                        if (ordersObj) {
+                            orders = Object.values(ordersObj);
+                            console.log('✅ Loaded', orders.length, 'orders from Firebase (multi-user)');
+                        }
+                        
+                        // Set up real-time listener
+                        database.ref('orders').on('value', (snapshot) => {
+                            const ordersObj = snapshot.val();
+                            if (ordersObj) {
+                                const freshOrders = Object.values(ordersObj);
+                                this.displayOrders(freshOrders, ordersList);
+                            } else {
+                                ordersList.innerHTML = '<p>No orders yet. Orders will appear here when customers place them.</p>';
+                            }
+                        });
+                        
+                    } else if (window.storage) {
+                        // Use Claude storage
+                        const ordersResult = await window.storage.get('cafe-orders', true);
+                        if (ordersResult && ordersResult.value) {
+                            orders = JSON.parse(ordersResult.value);
+                            console.log('Loaded from shared storage:', orders.length, 'orders');
+                        }
+                    } else {
+                        // Fallback to localStorage
+                        const stored = localStorage.getItem('cafe-orders');
+                        if (stored) {
+                            orders = JSON.parse(stored);
+                            console.log('⚠️ Loaded from localStorage (no multi-user):', orders.length, 'orders');
+                        }
+                    }
+
+                    this.displayOrders(orders, ordersList);
+                    
+                } catch (error) {
+                    console.error('ERROR LOADING ORDERS:', error);
+                    ordersList.innerHTML = '<p style="color: red;">ERROR: ' + error.message + '</p>';
+                }
+
+                // Render menu management
+                const menuManagement = document.getElementById('menu-management');
+                menuManagement.innerHTML = this.menu.map(item => `
+                    <div class="menu-item-edit">
+                        <h4>${item.name}
+                            <span class="status-badge ${item.status}">${item.status.replace('-', ' ').toUpperCase()}</span>
+                        </h4>
+                        <p>Current Price: $${item.price.toFixed(2)}</p>
+                        <div class="menu-item-controls">
+                            <input type="number" id="price-${item.id}" value="${item.price}" step="0.01" min="0">
+                            <button class="btn" onclick="app.updatePrice(${item.id})">Update Price</button>
+                            <button class="btn ${item.status === 'sold-out' ? 'secondary' : ''}" 
+                                onclick="app.toggleStatus(${item.id}, 'sold-out')">
+                                ${item.status === 'sold-out' ? 'Mark In Stock' : 'Mark Sold Out'}
+                            </button>
+                            <button class="btn ${item.status === 'off-market' ? 'secondary' : ''}" 
+                                onclick="app.toggleStatus(${item.id}, 'off-market')">
+                                ${item.status === 'off-market' ? 'Put On Market' : 'Take Off Market'}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Render coupons list
+                await this.renderCouponsList();
+                
+                console.log('=== HOST DASHBOARD LOADED ===');
+            },
+
+            displayOrders(orders, ordersList) {
+                if (orders.length === 0) {
+                    ordersList.innerHTML = '<p>No orders yet. Orders will appear here when customers place them.</p>';
+                } else {
+                    console.log('Rendering', orders.length, 'orders');
+                    ordersList.innerHTML = orders.slice().reverse().map((order) => `
+                        <div class="order-card" id="order-${order.id}">
+                            <h4>Order #${order.id}</h4>
+                            <p><strong>Customer:</strong> ${order.username || 'Guest'}</p>
+                            <p><strong>Time:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+                            <div class="order-items">
+                                ${order.items.map(item => `
+                                    <div class="order-item">
+                                        ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <p style="font-size: 1.2rem; font-weight: 600; margin-top: 1rem;">
+                                Total: $${order.total.toFixed(2)}
+                            </p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <button class="btn" style="background: var(--forest-green); padding: 0.6rem 1rem;" onclick="app.promoteToHost('${order.username}')">
+                                    Make Host
+                                </button>
+                                <button class="btn" style="background: var(--wood-tan); color: var(--moose-brown); padding: 0.6rem 1rem;" onclick="app.showCouponModal('${order.username}')">
+                                    Give Coupon
+                                </button>
+                                <button class="btn" style="background: var(--burnt-orange); padding: 0.6rem 1rem;" onclick="app.declineOrder(${order.id})">
+                                    Decline Order
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            },
+
+            async updatePrice(itemId) {
+                const newPrice = parseFloat(document.getElementById(`price-${itemId}`).value);
+                const item = this.menu.find(i => i.id === itemId);
+                if (item && newPrice > 0) {
+                    item.price = newPrice;
+                    await this.saveMenu();
+                    this.renderHostDashboard();
+                    this.renderMenu();
+                    this.showNotification('Price updated!');
+                }
+            },
+
+            async toggleStatus(itemId, statusType) {
+                const item = this.menu.find(i => i.id === itemId);
+                if (item) {
+                    if (item.status === statusType) {
+                        item.status = 'in-stock';
+                    } else {
+                        item.status = statusType;
+                    }
+                    await this.saveMenu();
+                    this.renderHostDashboard();
+                    this.renderMenu();
+                    this.showNotification('Status updated!');
+                }
+            },
+
+            async transferHost() {
+                const newHostName = document.getElementById('new-host-name').value;
+                const newPassword = document.getElementById('new-host-password').value;
+
+                if (!newPassword) {
+                    this.showNotification('Please enter a password');
+                    return;
+                }
+
+                const hostName = newHostName || 'New Host';
+
+                try {
+                    await window.storage.set('host-info', JSON.stringify({
+                        name: hostName,
+                        password: newPassword,
+                        transferredAt: new Date().toISOString()
+                    }));
+                    
+                    const hostNameEl = document.getElementById('current-host-name');
+                    if (hostNameEl) {
+                        hostNameEl.textContent = hostName;
+                    }
+                    
+                    document.getElementById('new-host-name').value = '';
+                    document.getElementById('new-host-password').value = '';
+                    
+                    this.showNotification(`Host privileges transferred to ${hostName}!`);
+                } catch (error) {
+                    console.error('Transfer error:', error);
+                    this.showNotification('Error transferring host privileges');
+                }
+            },
+
+            async declineOrder(orderId) {
+                try {
+                    if (useFirebase && database) {
+                        // Delete from Firebase
+                        await database.ref('orders/' + orderId).remove();
+                        console.log('✅ Order deleted from Firebase');
+                    } else if (window.storage) {
+                        // Use Claude storage
+                        const ordersResult = await window.storage.get('cafe-orders', true);
+                        if (ordersResult && ordersResult.value) {
+                            let orders = JSON.parse(ordersResult.value);
+                            orders = orders.filter(order => order.id !== orderId);
+                            await window.storage.set('cafe-orders', JSON.stringify(orders), true);
+                        }
+                    } else {
+                        // Fallback to localStorage
+                        const stored = localStorage.getItem('cafe-orders');
+                        if (stored) {
+                            let orders = JSON.parse(stored);
+                            orders = orders.filter(order => order.id !== orderId);
+                            localStorage.setItem('cafe-orders', JSON.stringify(orders));
+                        }
+                    }
+                    
+                    this.showNotification('Order declined and removed');
+                    
+                    // Only manually refresh if not using Firebase (Firebase auto-updates)
+                    if (!useFirebase) {
+                        this.renderHostDashboard();
+                    }
+                } catch (error) {
+                    console.error('Error declining order:', error);
+                    this.showNotification('Error declining order');
+                }
+            },
+
+            async promoteToHost(username) {
+                if (confirm(`Promote ${username} to host? They will have full access to the host dashboard.`)) {
+                    try {
+                        await window.storage.set('host-info', JSON.stringify({
+                            name: username,
+                            password: 'host123',
+                            transferredAt: new Date().toISOString()
+                        }));
+                        
+                        const hostNameEl = document.getElementById('current-host-name');
+                        if (hostNameEl) {
+                            hostNameEl.textContent = username;
+                        }
+                        
+                        this.showNotification(`${username} is now a host! Their password is: host123`);
+                    } catch (error) {
+                        console.error('Error promoting to host:', error);
+                        this.showNotification('Error promoting user');
+                    }
+                }
+            },
+
+            showCouponModal(username) {
+                document.getElementById('coupon-username').textContent = username;
+                document.getElementById('coupon-modal').style.display = 'flex';
+                this.currentCouponUser = username;
+            },
+
+            closeCouponModal() {
+                document.getElementById('coupon-modal').style.display = 'none';
+                this.currentCouponUser = null;
+            },
+
+            toggleDiscountSection() {
+                const type = document.getElementById('coupon-type').value;
+                const discountSection = document.getElementById('discount-section');
+                discountSection.style.display = type === 'discount' ? 'block' : 'none';
+            },
+
+            async createCoupon() {
+                if (!window.storage) {
+                    this.showNotification('Storage not available - coupons cannot be saved');
+                    return;
+                }
+
+                const username = this.currentCouponUser;
+                const type = document.getElementById('coupon-type').value;
+                const discountAmount = type === 'discount' ? parseInt(document.getElementById('discount-amount').value) : 100;
+                const expirationValue = parseInt(document.getElementById('expiration-value').value);
+                const expirationUnit = document.getElementById('expiration-unit').value;
+
+                let expiresAt = null;
+                if (expirationUnit !== 'infinite') {
+                    const now = new Date();
+                    const multipliers = {
+                        seconds: 1000,
+                        minutes: 60 * 1000,
+                        hours: 60 * 60 * 1000,
+                        days: 24 * 60 * 60 * 1000,
+                        years: 365 * 24 * 60 * 60 * 1000,
+                        decades: 10 * 365 * 24 * 60 * 60 * 1000
+                    };
+                    expiresAt = new Date(now.getTime() + (expirationValue * multipliers[expirationUnit])).toISOString();
+                }
+
+                const coupon = {
+                    id: Date.now(),
+                    username: username,
+                    type: type,
+                    discount: discountAmount,
+                    expiresAt: expiresAt,
+                    expirationText: expirationUnit === 'infinite' ? 'Never' : `${expirationValue} ${expirationUnit}`,
+                    createdAt: new Date().toISOString(),
+                    used: false
+                };
+
+                try {
+                    // Load existing coupons
+                    let coupons = [];
+                    try {
+                        const couponsResult = await window.storage.get('coupons', true);
+                        if (couponsResult && couponsResult.value) {
+                            coupons = JSON.parse(couponsResult.value);
+                        }
+                    } catch (e) {
+                        // First coupon, start fresh array
+                        coupons = [];
+                    }
+
+                    coupons.push(coupon);
+                    await window.storage.set('coupons', JSON.stringify(coupons), true);
+
+                    this.showNotification(`Coupon created for ${username}!`);
+                    this.closeCouponModal();
+                    this.renderHostDashboard();
+                } catch (error) {
+                    console.log('Error creating coupon:', error);
+                    this.showNotification('Could not save coupon - storage error');
+                }
+            },
+
+            async loadUserCoupon() {
+                if (!this.currentUser || !window.storage) return null;
+
+                try {
+                    const couponsResult = await window.storage.get('coupons', true);
+                    if (couponsResult && couponsResult.value) {
+                        let coupons = JSON.parse(couponsResult.value);
+                        const now = new Date();
+
+                        // Find valid coupon for this user
+                        const validCoupon = coupons.find(c => 
+                            c.username === this.currentUser && 
+                            !c.used && 
+                            (c.expiresAt === null || new Date(c.expiresAt) > now)
+                        );
+
+                        return validCoupon || null;
+                    }
+                } catch (error) {
+                    // Storage might not be ready yet, just return null
+                    return null;
+                }
+                return null;
+            },
+
+            async renderCouponsList() {
+                const couponsList = document.getElementById('coupons-list');
+                if (!couponsList) return;
+
+                if (!window.storage) {
+                    couponsList.innerHTML = '<p>Storage not available</p>';
+                    return;
+                }
+
+                try {
+                    const couponsResult = await window.storage.get('coupons', true);
+                    if (couponsResult && couponsResult.value) {
+                        let coupons = JSON.parse(couponsResult.value);
+                        const now = new Date();
+
+                        // Filter active coupons
+                        const activeCoupons = coupons.filter(c => 
+                            !c.used && 
+                            (c.expiresAt === null || new Date(c.expiresAt) > now)
+                        );
+
+                        if (activeCoupons.length === 0) {
+                            couponsList.innerHTML = '<p>No active coupons</p>';
+                        } else {
+                            couponsList.innerHTML = activeCoupons.map(coupon => `
+                                <div class="menu-item-edit">
+                                    <h4>🎟️ ${coupon.username}
+                                        <span class="status-badge in-stock">${coupon.type === 'free' ? 'FREE ORDER' : coupon.discount + '% OFF'}</span>
+                                    </h4>
+                                    <p>Expires: ${coupon.expirationText}</p>
+                                    <p style="font-size: 0.9rem; opacity: 0.8;">Created: ${new Date(coupon.createdAt).toLocaleString()}</p>
+                                    <button class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: var(--burnt-orange);" onclick="app.deleteCoupon(${coupon.id})">
+                                        Delete Coupon
+                                    </button>
+                                </div>
+                            `).join('');
+                        }
+                    } else {
+                        couponsList.innerHTML = '<p>No active coupons</p>';
+                    }
+                } catch (error) {
+                    couponsList.innerHTML = '<p>No active coupons yet</p>';
+                }
+            },
+
+            async deleteCoupon(couponId) {
+                try {
+                    const couponsResult = await window.storage.get('coupons', true);
+                    if (couponsResult && couponsResult.value) {
+                        let coupons = JSON.parse(couponsResult.value);
+                        coupons = coupons.filter(c => c.id !== couponId);
+                        await window.storage.set('coupons', JSON.stringify(coupons), true);
+                        this.showNotification('Coupon deleted');
+                        this.renderHostDashboard();
+                    }
+                } catch (error) {
+                    console.error('Error deleting coupon:', error);
+                }
+            },
+
+            showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+        };
+
+        // Initialize app
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+            game.init();
+        });
+
+        // Moose Hunter Game
+        const game = {
+            canvas: null,
+            ctx: null,
+            player: { x: 400, y: 500, width: 40, height: 40, speed: 5 },
+            moose: [],
+            bullets: [],
+            score: 0,
+            highScore: 0,
+            keys: {},
+            gameLoop: null,
+            mooseSpawnTimer: 0,
+            mooseSpawnInterval: 90,
+
+            init() {
+                this.canvas = document.getElementById('game-canvas');
+                if (!this.canvas) return;
+                
+                this.ctx = this.canvas.getContext('2d');
+                this.loadHighScore();
+                
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.key] = true;
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        if (this.gameLoop) { // Only shoot if game is running
+                            this.shoot();
+                        }
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.key] = false;
+                });
+                
+                // Don't auto-start anymore
+            },
+
+            async loadHighScore() {
+                try {
+                    if (window.storage) {
+                        const result = await window.storage.get('moose-hunter-high-score');
+                        if (result && result.value) {
+                            this.highScore = parseInt(result.value);
+                            document.getElementById('game-high-score').textContent = this.highScore;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not load high score');
+                }
+            },
+
+            async saveHighScore() {
+                try {
+                    if (window.storage) {
+                        await window.storage.set('moose-hunter-high-score', this.highScore.toString());
+                    }
+                } catch (e) {
+                    console.log('Could not save high score');
+                }
+            },
+
+            start() {
+                if (this.gameLoop) return;
+                this.gameLoop = setInterval(() => this.update(), 1000 / 60);
+            },
+
+            restart() {
+                this.score = 0;
+                this.moose = [];
+                this.bullets = [];
+                this.player.x = 400;
+                this.player.y = 500;
+                this.mooseSpawnTimer = 0;
+                document.getElementById('game-score').textContent = this.score;
+            },
+
+            update() {
+                if (!this.ctx) return;
+
+                // Move player
+                if (this.keys['ArrowLeft'] && this.player.x > 0) {
+                    this.player.x -= this.player.speed;
+                }
+                if (this.keys['ArrowRight'] && this.player.x < this.canvas.width - this.player.width) {
+                    this.player.x += this.player.speed;
+                }
+                if (this.keys['ArrowUp'] && this.player.y > 0) {
+                    this.player.y -= this.player.speed;
+                }
+                if (this.keys['ArrowDown'] && this.player.y < this.canvas.height - this.player.height) {
+                    this.player.y += this.player.speed;
+                }
+
+                // Spawn moose
+                this.mooseSpawnTimer++;
+                if (this.mooseSpawnTimer > this.mooseSpawnInterval) {
+                    this.mooseSpawnTimer = 0;
+                    this.spawnMoose();
+                }
+
+                // Update moose
+                this.moose.forEach((m, index) => {
+                    m.x += m.speedX;
+                    m.y += m.speedY;
+                    
+                    // Remove moose that go off screen
+                    if (m.x < -100 || m.x > this.canvas.width + 100 || 
+                        m.y < -100 || m.y > this.canvas.height + 100) {
+                        this.moose.splice(index, 1);
+                    }
+                });
+
+                // Update bullets
+                this.bullets.forEach((b, index) => {
+                    b.y -= 10;
+                    if (b.y < 0) {
+                        this.bullets.splice(index, 1);
+                    }
+                });
+
+                // Check collisions
+                this.checkCollisions();
+
+                // Draw everything
+                this.draw();
+            },
+
+            spawnMoose() {
+                const side = Math.floor(Math.random() * 4);
+                let x, y, speedX, speedY;
+                
+                switch(side) {
+                    case 0: // Top
+                        x = Math.random() * this.canvas.width;
+                        y = -50;
+                        speedX = (Math.random() - 0.5) * 2;
+                        speedY = Math.random() * 2 + 1;
+                        break;
+                    case 1: // Right
+                        x = this.canvas.width + 50;
+                        y = Math.random() * this.canvas.height;
+                        speedX = -(Math.random() * 2 + 1);
+                        speedY = (Math.random() - 0.5) * 2;
+                        break;
+                    case 2: // Bottom
+                        x = Math.random() * this.canvas.width;
+                        y = this.canvas.height + 50;
+                        speedX = (Math.random() - 0.5) * 2;
+                        speedY = -(Math.random() * 2 + 1);
+                        break;
+                    case 3: // Left
+                        x = -50;
+                        y = Math.random() * this.canvas.height;
+                        speedX = Math.random() * 2 + 1;
+                        speedY = (Math.random() - 0.5) * 2;
+                        break;
+                }
+                
+                this.moose.push({ x, y, width: 50, height: 50, speedX, speedY });
+            },
+
+            shoot() {
+                this.bullets.push({
+                    x: this.player.x + this.player.width / 2 - 2,
+                    y: this.player.y,
+                    width: 4,
+                    height: 10
+                });
+            },
+
+            checkCollisions() {
+                this.bullets.forEach((bullet, bIndex) => {
+                    this.moose.forEach((moose, mIndex) => {
+                        if (bullet.x < moose.x + moose.width &&
+                            bullet.x + bullet.width > moose.x &&
+                            bullet.y < moose.y + moose.height &&
+                            bullet.y + bullet.height > moose.y) {
+                            
+                            // Hit!
+                            this.bullets.splice(bIndex, 1);
+                            this.moose.splice(mIndex, 1);
+                            this.score += 10;
+                            document.getElementById('game-score').textContent = this.score;
+                            
+                            if (this.score > this.highScore) {
+                                this.highScore = this.score;
+                                document.getElementById('game-high-score').textContent = this.highScore;
+                                this.saveHighScore();
+                            }
+                        }
+                    });
+                });
+            },
+
+            draw() {
+                // Clear canvas with gradient background
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(1, '#98D8C8');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw ground
+                this.ctx.fillStyle = '#8B7355';
+                this.ctx.fillRect(0, this.canvas.height - 50, this.canvas.width, 50);
+
+                // Draw trees in background
+                for (let i = 0; i < 5; i++) {
+                    const treeX = i * 180 + 50;
+                    // Tree trunk
+                    this.ctx.fillStyle = '#654321';
+                    this.ctx.fillRect(treeX, this.canvas.height - 100, 15, 60);
+                    // Tree top
+                    this.ctx.fillStyle = '#2d4a3e';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(treeX + 7.5, this.canvas.height - 120);
+                    this.ctx.lineTo(treeX - 20, this.canvas.height - 60);
+                    this.ctx.lineTo(treeX + 35, this.canvas.height - 60);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
+
+                // Draw player (hunter)
+                this.ctx.fillStyle = '#d95d39';
+                this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+                // Hunter hat
+                this.ctx.fillStyle = '#3d2817';
+                this.ctx.fillRect(this.player.x + 5, this.player.y - 10, 30, 10);
+                // Hunter gun
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(this.player.x + this.player.width / 2 - 2, this.player.y - 15, 4, 15);
+
+                // Draw moose
+                this.moose.forEach(m => {
+                    // Moose body
+                    this.ctx.fillStyle = '#654321';
+                    this.ctx.fillRect(m.x, m.y + 10, m.width, m.height - 20);
+                    
+                    // Moose head
+                    this.ctx.fillStyle = '#8B6F47';
+                    this.ctx.fillRect(m.x + m.width - 20, m.y, 25, 25);
+                    
+                    // Antlers
+                    this.ctx.strokeStyle = '#654321';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(m.x + m.width - 10, m.y);
+                    this.ctx.lineTo(m.x + m.width - 15, m.y - 15);
+                    this.ctx.stroke();
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(m.x + m.width - 5, m.y);
+                    this.ctx.lineTo(m.x + m.width, m.y - 15);
+                    this.ctx.stroke();
+                    
+                    // Legs
+                    this.ctx.fillStyle = '#654321';
+                    this.ctx.fillRect(m.x + 5, m.y + m.height - 10, 8, 15);
+                    this.ctx.fillRect(m.x + m.width - 15, m.y + m.height - 10, 8, 15);
+                });
+
+                // Draw bullets
+                this.ctx.fillStyle = '#FFD700';
+                this.bullets.forEach(b => {
+                    this.ctx.fillRect(b.x, b.y, b.width, b.height);
+                });
+            }
+        };
+
+        // Moose Maker Deluxe Game
+        const mooseMaker = {
+            melody: [],
+            notes: [
+                { name: 'C', key: 'Q', frequency: 261.63, isBlack: false },
+                { name: 'C#', key: '2', frequency: 277.18, isBlack: true },
+                { name: 'D', key: 'W', frequency: 293.66, isBlack: false },
+                { name: 'D#', key: '3', frequency: 311.13, isBlack: true },
+                { name: 'E', key: 'E', frequency: 329.63, isBlack: false },
+                { name: 'F', key: 'R', frequency: 349.23, isBlack: false },
+                { name: 'F#', key: '5', frequency: 369.99, isBlack: true },
+                { name: 'G', key: 'T', frequency: 392.00, isBlack: false },
+                { name: 'G#', key: '6', frequency: 415.30, isBlack: true },
+                { name: 'A', key: 'Y', frequency: 440.00, isBlack: false },
+                { name: 'A#', key: '7', frequency: 466.16, isBlack: true },
+                { name: 'B', key: 'U', frequency: 493.88, isBlack: false },
+                { name: 'C2', key: 'I', frequency: 523.25, isBlack: false },
+                { name: 'C#2', key: '9', frequency: 554.37, isBlack: true },
+                { name: 'D2', key: 'O', frequency: 587.33, isBlack: false },
+                { name: 'D#2', key: '0', frequency: 622.25, isBlack: true },
+                { name: 'E2', key: 'P', frequency: 659.25, isBlack: false }
+            ],
+            audioContext: null,
+
+            init() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.renderPiano();
+                this.setupKeyboard();
+            },
+
+            renderPiano() {
+                const container = document.getElementById('piano-container');
+                container.innerHTML = '';
+
+                // Create white keys first
+                const whiteKeys = this.notes.filter(n => !n.isBlack);
+                whiteKeys.forEach((note, index) => {
+                    const key = document.createElement('div');
+                    key.style.cssText = `
+                        width: 60px;
+                        height: 200px;
+                        background: white;
+                        border: 3px solid var(--moose-brown);
+                        border-radius: 0 0 8px 8px;
+                        cursor: pointer;
+                        position: relative;
+                        transition: all 0.1s;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: flex-end;
+                        align-items: center;
+                        padding-bottom: 10px;
+                        font-family: 'Bebas Neue', sans-serif;
+                    `;
+                    key.innerHTML = `
+                        <div style="font-size: 0.9rem; color: var(--moose-brown);">${note.name}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.6;">${note.key}</div>
+                    `;
+                    
+                    key.addEventListener('mousedown', () => {
+                        key.style.background = '#f0f0f0';
+                        this.playNote(note);
+                    });
+                    key.addEventListener('mouseup', () => {
+                        key.style.background = 'white';
+                    });
+                    key.addEventListener('mouseleave', () => {
+                        key.style.background = 'white';
+                    });
+                    
+                    container.appendChild(key);
+                });
+
+                // Create black keys on top
+                const blackKeys = this.notes.filter(n => n.isBlack);
+                const blackKeyPositions = [1, 2, 4, 5, 6, 8, 9, 11, 12]; // Positions between white keys
+                
+                blackKeys.forEach((note, index) => {
+                    const key = document.createElement('div');
+                    const position = blackKeyPositions[index];
+                    key.style.cssText = `
+                        width: 40px;
+                        height: 130px;
+                        background: var(--moose-brown);
+                        border: 3px solid var(--deep-shadow);
+                        border-radius: 0 0 6px 6px;
+                        cursor: pointer;
+                        position: absolute;
+                        left: ${position * 60 + 40}px;
+                        top: 0;
+                        z-index: 10;
+                        transition: all 0.1s;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: flex-end;
+                        align-items: center;
+                        padding-bottom: 8px;
+                        color: white;
+                        font-family: 'Bebas Neue', sans-serif;
+                    `;
+                    key.innerHTML = `
+                        <div style="font-size: 0.85rem;">${note.name}</div>
+                        <div style="font-size: 0.65rem; opacity: 0.7;">${note.key}</div>
+                    `;
+                    
+                    key.addEventListener('mousedown', () => {
+                        key.style.background = '#2d2010';
+                        this.playNote(note);
+                    });
+                    key.addEventListener('mouseup', () => {
+                        key.style.background = 'var(--moose-brown)';
+                    });
+                    key.addEventListener('mouseleave', () => {
+                        key.style.background = 'var(--moose-brown)';
+                    });
+                    
+                    container.appendChild(key);
+                });
+            },
+
+            setupKeyboard() {
+                document.addEventListener('keydown', (e) => {
+                    if (document.getElementById('maker-game').style.display !== 'block') return;
+                    
+                    const key = e.key.toUpperCase();
+                    const note = this.notes.find(n => n.key === key);
+                    if (note && !e.repeat) {
+                        this.playNote(note);
+                    }
+                });
+            },
+
+            playNote(note) {
+                // Play sound
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.value = note.frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.5);
+
+                // Add to melody
+                this.melody.push(note);
+                this.updateMelodyDisplay();
+                this.showCurrentNote(note.name);
+            },
+
+            showCurrentNote(noteName) {
+                const display = document.getElementById('current-note-display');
+                display.textContent = noteName;
+                display.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    display.style.transform = 'scale(1)';
+                }, 200);
+            },
+
+            updateMelodyDisplay() {
+                const display = document.getElementById('melody-display');
+                if (this.melody.length === 0) {
+                    display.textContent = 'Your melody will appear here...';
+                } else {
+                    display.textContent = this.melody.map(n => n.name).join(' → ');
+                }
+            },
+
+            async playMelody() {
+                if (this.melody.length === 0) {
+                    app.showNotification('Add some notes first!');
+                    return;
+                }
+
+                for (let i = 0; i < this.melody.length; i++) {
+                    const note = this.melody[i];
+                    this.showCurrentNote(note.name);
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.frequency.value = note.frequency;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 0.4);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                document.getElementById('current-note-display').textContent = '🎵 Melody complete! 🎵';
+            },
+
+            clearMelody() {
+                this.melody = [];
+                this.updateMelodyDisplay();
+                document.getElementById('current-note-display').textContent = 'Ready to play!';
+            }
+        };
+
+        // Super Moose Brothers Game
+        const mooseBros = {
+            canvas: null,
+            ctx: null,
+            player: {
+                x: 50,
+                y: 300,
+                width: 32,
+                height: 48,
+                velocityY: 0,
+                velocityX: 0,
+                speed: 3,
+                jumpPower: -12,
+                onGround: false,
+                powered: false,
+                poweredHeight: 64
+            },
+            gravity: 0.6,
+            beans: 0,
+            lives: 3,
+            keys: {},
+            gameLoop: null,
+            platforms: [],
+            beanItems: [],
+            enemies: [],
+            questionBoxes: [],
+            cameraX: 0,
+
+            init() {
+                this.canvas = document.getElementById('moose-canvas');
+                if (!this.canvas) return;
+                
+                this.ctx = this.canvas.getContext('2d');
+                this.setupLevel();
+                this.setupControls();
+                this.start();
+            },
+
+            setupLevel() {
+                // Reset
+                this.beans = 0;
+                this.lives = 3;
+                this.player.x = 50;
+                this.player.y = 300;
+                this.player.velocityY = 0;
+                this.player.powered = false;
+                this.cameraX = 0;
+                
+                // Ground
+                this.platforms = [
+                    { x: 0, y: 440, width: 3200, height: 40, type: 'ground' }
+                ];
+
+                // Platforms (like Mario level 1-1)
+                this.platforms.push(
+                    { x: 400, y: 350, width: 100, height: 20, type: 'platform' },
+                    { x: 600, y: 300, width: 100, height: 20, type: 'platform' },
+                    { x: 800, y: 350, width: 150, height: 20, type: 'platform' },
+                    { x: 1100, y: 280, width: 100, height: 20, type: 'platform' },
+                    { x: 1300, y: 350, width: 200, height: 20, type: 'platform' },
+                    { x: 1600, y: 300, width: 100, height: 20, type: 'platform' },
+                    { x: 1900, y: 250, width: 150, height: 20, type: 'platform' },
+                    { x: 2200, y: 350, width: 200, height: 20, type: 'platform' },
+                    { x: 2600, y: 300, width: 150, height: 20, type: 'platform' }
+                );
+
+                // Pipes
+                this.platforms.push(
+                    { x: 700, y: 380, width: 50, height: 60, type: 'pipe' },
+                    { x: 1400, y: 360, width: 50, height: 80, type: 'pipe' },
+                    { x: 2100, y: 340, width: 50, height: 100, type: 'pipe' }
+                );
+
+                // Question boxes with coffee cups
+                this.questionBoxes = [
+                    { x: 350, y: 250, width: 30, height: 30, hit: false },
+                    { x: 650, y: 200, width: 30, height: 30, hit: false },
+                    { x: 1150, y: 180, width: 30, height: 30, hit: false },
+                    { x: 1700, y: 200, width: 30, height: 30, hit: false },
+                    { x: 2300, y: 250, width: 30, height: 30, hit: false }
+                ];
+
+                // Coffee beans (coins)
+                this.beanItems = [];
+                for (let i = 0; i < 20; i++) {
+                    this.beanItems.push({
+                        x: 300 + i * 150,
+                        y: 250 - Math.random() * 100,
+                        width: 20,
+                        height: 20,
+                        collected: false
+                    });
+                }
+
+                // Enemies (goombas)
+                this.enemies = [
+                    { x: 500, y: 410, width: 30, height: 30, velocityX: -1, alive: true },
+                    { x: 900, y: 410, width: 30, height: 30, velocityX: -1, alive: true },
+                    { x: 1500, y: 410, width: 30, height: 30, velocityX: -1, alive: true },
+                    { x: 2000, y: 410, width: 30, height: 30, velocityX: -1, alive: true },
+                    { x: 2500, y: 410, width: 30, height: 30, velocityX: -1, alive: true }
+                ];
+
+                this.updateUI();
+            },
+
+            setupControls() {
+                document.addEventListener('keydown', (e) => {
+                    if (document.getElementById('brothers-game').style.display !== 'block') return;
+                    this.keys[e.key] = true;
+                    
+                    // Jump with W or Space
+                    if ((e.key === 'w' || e.key === 'W' || e.key === ' ') && this.player.onGround) {
+                        e.preventDefault();
+                        this.player.velocityY = this.player.jumpPower;
+                        this.player.onGround = false;
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.key] = false;
+                });
+            },
+
+            start() {
+                if (this.gameLoop) clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(() => this.update(), 1000 / 60);
+            },
+
+            restart() {
+                this.setupLevel();
+            },
+
+            update() {
+                if (!this.ctx) return;
+
+                // Player movement with WASD
+                if (this.keys['a'] || this.keys['A']) {
+                    this.player.velocityX = -this.player.speed;
+                } else if (this.keys['d'] || this.keys['D']) {
+                    this.player.velocityX = this.player.speed;
+                } else {
+                    this.player.velocityX *= 0.8;
+                }
+
+                // Apply gravity
+                this.player.velocityY += this.gravity;
+                
+                // Update position
+                this.player.x += this.player.velocityX;
+                this.player.y += this.player.velocityY;
+
+                // Camera follow
+                if (this.player.x > 300) {
+                    this.cameraX = this.player.x - 300;
+                }
+
+                // Collision with platforms
+                this.player.onGround = false;
+                const playerHeight = this.player.powered ? this.player.poweredHeight : this.player.height;
+                
+                this.platforms.forEach(platform => {
+                    if (this.player.x + this.player.width > platform.x &&
+                        this.player.x < platform.x + platform.width &&
+                        this.player.y + playerHeight > platform.y &&
+                        this.player.y + playerHeight < platform.y + platform.height + 15 &&
+                        this.player.velocityY > 0) {
+                        
+                        this.player.y = platform.y - playerHeight;
+                        this.player.velocityY = 0;
+                        this.player.onGround = true;
+                    }
+                });
+
+                // Check question boxes
+                this.questionBoxes.forEach(box => {
+                    if (!box.hit &&
+                        this.player.x + this.player.width > box.x &&
+                        this.player.x < box.x + box.width &&
+                        this.player.y < box.y + box.height &&
+                        this.player.y + 10 > box.y &&
+                        this.player.velocityY < 0) {
+                        
+                        box.hit = true;
+                        this.player.powered = true;
+                        app.showNotification('Coffee Power-up! 🦌☕');
+                    }
+                });
+
+                // Collect beans
+                this.beanItems.forEach(bean => {
+                    if (!bean.collected &&
+                        this.player.x + this.player.width > bean.x &&
+                        this.player.x < bean.x + bean.width &&
+                        this.player.y + playerHeight > bean.y &&
+                        this.player.y < bean.y + bean.height) {
+                        
+                        bean.collected = true;
+                        this.beans++;
+                        this.updateUI();
+                    }
+                });
+
+                // Enemy movement and collision
+                this.enemies.forEach(enemy => {
+                    if (!enemy.alive) return;
+                    
+                    enemy.x += enemy.velocityX;
+                    
+                    // Bounce off edges
+                    if (enemy.x < 0 || enemy.x > 3000) {
+                        enemy.velocityX *= -1;
+                    }
+
+                    // Check collision with player
+                    if (this.player.x + this.player.width > enemy.x &&
+                        this.player.x < enemy.x + enemy.width &&
+                        this.player.y + playerHeight > enemy.y &&
+                        this.player.y < enemy.y + enemy.height) {
+                        
+                        // Jump on enemy
+                        if (this.player.velocityY > 0) {
+                            enemy.alive = false;
+                            this.player.velocityY = -8;
+                        } else if (!this.player.powered) {
+                            // Hit by enemy
+                            this.lives--;
+                            this.updateUI();
+                            if (this.lives <= 0) {
+                                app.showNotification('Game Over! 🦌');
+                                this.restart();
+                            } else {
+                                this.player.x = 50;
+                                this.player.y = 300;
+                                this.cameraX = 0;
+                            }
+                        } else {
+                            // Powered player defeats enemy
+                            enemy.alive = false;
+                        }
+                    }
+                });
+
+                // Fall off world
+                if (this.player.y > 600) {
+                    this.lives--;
+                    this.updateUI();
+                    if (this.lives <= 0) {
+                        this.restart();
+                    } else {
+                        this.player.x = 50;
+                        this.player.y = 300;
+                        this.player.velocityY = 0;
+                        this.cameraX = 0;
+                    }
+                }
+
+                // Win condition
+                if (this.player.x > 2900) {
+                    app.showNotification('Level Complete! 🎉');
+                    this.restart();
+                }
+
+                this.draw();
+            },
+
+            draw() {
+                // Clear canvas
+                this.ctx.fillStyle = '#5c94fc';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Save context for camera
+                this.ctx.save();
+                this.ctx.translate(-this.cameraX, 0);
+
+                // Draw clouds
+                this.ctx.fillStyle = 'white';
+                for (let i = 0; i < 10; i++) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(i * 400 + 100, 80, 25, 0, Math.PI * 2);
+                    this.ctx.arc(i * 400 + 130, 80, 30, 0, Math.PI * 2);
+                    this.ctx.arc(i * 400 + 160, 80, 25, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+
+                // Draw platforms
+                this.platforms.forEach(platform => {
+                    if (platform.type === 'ground') {
+                        this.ctx.fillStyle = '#8B4513';
+                        this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        // Grass on top
+                        this.ctx.fillStyle = '#2d4a3e';
+                        this.ctx.fillRect(platform.x, platform.y, platform.width, 8);
+                    } else if (platform.type === 'pipe') {
+                        // Pipe
+                        this.ctx.fillStyle = '#2d4a3e';
+                        this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                        this.ctx.fillStyle = '#1a2f26';
+                        this.ctx.fillRect(platform.x, platform.y, platform.width, 10);
+                    } else {
+                        // Regular platform
+                        this.ctx.fillStyle = '#d95d39';
+                        this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                    }
+                });
+
+                // Draw question boxes
+                this.questionBoxes.forEach(box => {
+                    if (box.hit) {
+                        this.ctx.fillStyle = '#8B4513';
+                    } else {
+                        this.ctx.fillStyle = '#FFD700';
+                    }
+                    this.ctx.fillRect(box.x, box.y, box.width, box.height);
+                    
+                    if (!box.hit) {
+                        // Draw "?"
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.font = 'bold 20px Arial';
+                        this.ctx.fillText('☕', box.x + 5, box.y + 23);
+                    }
+                });
+
+                // Draw coffee beans
+                this.beanItems.forEach(bean => {
+                    if (!bean.collected) {
+                        this.ctx.fillStyle = '#8B4513';
+                        this.ctx.beginPath();
+                        this.ctx.ellipse(bean.x + 10, bean.y + 10, 8, 12, 0, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+
+                // Draw enemies
+                this.enemies.forEach(enemy => {
+                    if (enemy.alive) {
+                        this.ctx.fillStyle = '#8B4513';
+                        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                        // Eyes
+                        this.ctx.fillStyle = 'white';
+                        this.ctx.fillRect(enemy.x + 5, enemy.y + 8, 8, 8);
+                        this.ctx.fillRect(enemy.x + 17, enemy.y + 8, 8, 8);
+                    }
+                });
+
+                // Draw player (moose-man)
+                const playerHeight = this.player.powered ? this.player.poweredHeight : this.player.height;
+                
+                // Body
+                this.ctx.fillStyle = this.player.powered ? '#d4a574' : '#d95d39';
+                this.ctx.fillRect(this.player.x, this.player.y, this.player.width, playerHeight);
+                
+                // Moose head
+                this.ctx.fillStyle = '#654321';
+                this.ctx.fillRect(this.player.x + 4, this.player.y - 16, 24, 20);
+                
+                // Antlers
+                this.ctx.strokeStyle = '#654321';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.player.x + 8, this.player.y - 10);
+                this.ctx.lineTo(this.player.x + 3, this.player.y - 20);
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.player.x + 24, this.player.y - 10);
+                this.ctx.lineTo(this.player.x + 29, this.player.y - 20);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            },
+
+            updateUI() {
+                document.getElementById('moose-beans').textContent = this.beans;
+                document.getElementById('moose-lives').textContent = this.lives;
+            }
+        };
+
+        // Wildlife Scenery System
+        const wildlife = {
+            scenes: {
+                forest: { canvas: null, ctx: null, playing: false, loop: null },
+                moose: { canvas: null, ctx: null, playing: false, loop: null },
+                firefly: { canvas: null, ctx: null, playing: false, loop: null },
+                squirrel: { canvas: null, ctx: null, playing: false, loop: null },
+                mushroom: { canvas: null, ctx: null, playing: false, loop: null },
+                waterfall: { canvas: null, ctx: null, playing: false, loop: null }
+            },
+
+            init() {
+                // Initialize all scenes
+                Object.keys(this.scenes).forEach(sceneType => {
+                    const scene = this.scenes[sceneType];
+                    scene.canvas = document.getElementById(`${sceneType}-canvas`);
+                    if (scene.canvas) {
+                        scene.ctx = scene.canvas.getContext('2d');
+                        this.playScene(sceneType);
+                    }
+                });
+            },
+
+            playScene(sceneType) {
+                const scene = this.scenes[sceneType];
+                if (!scene.canvas) return;
+
+                if (scene.playing) {
+                    // Pause
+                    scene.playing = false;
+                    if (scene.loop) clearInterval(scene.loop);
+                } else {
+                    // Play
+                    scene.playing = true;
+                    scene.loop = setInterval(() => this[`animate${sceneType.charAt(0).toUpperCase() + sceneType.slice(1)}`](scene), 1000 / 30);
+                }
+            },
+
+            animateForest(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Realistic sky gradient
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+                skyGradient.addColorStop(0, '#4A90E2');
+                skyGradient.addColorStop(0.5, '#7CB3E9');
+                skyGradient.addColorStop(1, '#B8D4E8');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Distant mountains with atmospheric perspective
+                ctx.fillStyle = '#8BA3B8';
+                ctx.beginPath();
+                ctx.moveTo(0, 180);
+                ctx.lineTo(100, 140);
+                ctx.lineTo(200, 160);
+                ctx.lineTo(300, 130);
+                ctx.lineTo(400, 180);
+                ctx.lineTo(400, 300);
+                ctx.lineTo(0, 300);
+                ctx.fill();
+
+                // Fog/mist layer
+                ctx.fillStyle = 'rgba(200, 220, 230, 0.3)';
+                ctx.fillRect(0, 150, canvas.width, 60);
+
+                // Forest floor with depth
+                const groundGradient = ctx.createLinearGradient(0, 200, 0, canvas.height);
+                groundGradient.addColorStop(0, '#5C7A3D');
+                groundGradient.addColorStop(0.5, '#4A6332');
+                groundGradient.addColorStop(1, '#3A4F28');
+                ctx.fillStyle = groundGradient;
+                ctx.fillRect(0, 200, canvas.width, canvas.height - 200);
+
+                // Realistic trees with depth
+                const trees = [
+                    { x: 50, depth: 0.6, height: 180 },
+                    { x: 120, depth: 0.8, height: 200 },
+                    { x: 200, depth: 0.5, height: 160 },
+                    { x: 280, depth: 0.9, height: 220 },
+                    { x: 350, depth: 0.7, height: 190 }
+                ];
+
+                trees.sort((a, b) => a.depth - b.depth).forEach((tree, i) => {
+                    const sway = Math.sin(time * 0.5 + i) * 2 * tree.depth;
+                    const baseY = 200 + (1 - tree.depth) * 30;
+                    
+                    // Tree trunk with texture
+                    const trunkWidth = 20 * tree.depth;
+                    const trunkGradient = ctx.createLinearGradient(
+                        tree.x - trunkWidth/2, 0, 
+                        tree.x + trunkWidth/2, 0
+                    );
+                    trunkGradient.addColorStop(0, '#3D2817');
+                    trunkGradient.addColorStop(0.5, '#5C4033');
+                    trunkGradient.addColorStop(1, '#3D2817');
+                    ctx.fillStyle = trunkGradient;
+                    
+                    ctx.fillRect(
+                        tree.x - trunkWidth/2 + sway,
+                        baseY,
+                        trunkWidth,
+                        tree.height
+                    );
+
+                    // Pine needle clusters with depth
+                    const foliageY = baseY + 20;
+                    const foliageColors = [
+                        `rgba(45, 74, 62, ${0.6 * tree.depth})`,
+                        `rgba(56, 87, 74, ${0.7 * tree.depth})`,
+                        `rgba(68, 100, 85, ${0.8 * tree.depth})`
+                    ];
+
+                    for (let layer = 0; layer < 4; layer++) {
+                        const layerY = foliageY + layer * 35;
+                        const layerWidth = 80 - layer * 15;
+                        
+                        ctx.fillStyle = foliageColors[layer % 3];
+                        ctx.beginPath();
+                        ctx.moveTo(tree.x + sway, layerY);
+                        ctx.lineTo(tree.x - layerWidth/2 * tree.depth + sway, layerY + 40);
+                        ctx.lineTo(tree.x + layerWidth/2 * tree.depth + sway, layerY + 40);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                });
+
+                // Foreground grass with wind
+                ctx.strokeStyle = '#4A6332';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 50; i++) {
+                    const x = (i * 10) % canvas.width;
+                    const windOffset = Math.sin(time * 2 + i * 0.5) * 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x, canvas.height);
+                    ctx.quadraticCurveTo(
+                        x + windOffset, 
+                        canvas.height - 15,
+                        x + windOffset * 2,
+                        canvas.height - 25
+                    );
+                    ctx.stroke();
+                }
+
+                // Sunbeams through trees
+                ctx.fillStyle = 'rgba(255, 250, 200, 0.1)';
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(100 + i * 100, 0);
+                    ctx.lineTo(80 + i * 100, canvas.height);
+                    ctx.lineTo(120 + i * 100, canvas.height);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            },
+
+            animateMoose(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Sky
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.6);
+                skyGradient.addColorStop(0, '#7CA3CC');
+                skyGradient.addColorStop(1, '#B8D4E8');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Distant mountains with snow caps
+                ctx.fillStyle = '#5A6B7A';
+                ctx.beginPath();
+                ctx.moveTo(0, 140);
+                ctx.lineTo(80, 80);
+                ctx.lineTo(160, 120);
+                ctx.lineTo(240, 70);
+                ctx.lineTo(320, 110);
+                ctx.lineTo(400, 90);
+                ctx.lineTo(400, 300);
+                ctx.lineTo(0, 300);
+                ctx.fill();
+
+                // Snow on peaks
+                ctx.fillStyle = '#E8F0F5';
+                ctx.beginPath();
+                ctx.moveTo(70, 95);
+                ctx.lineTo(80, 80);
+                ctx.lineTo(90, 95);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(230, 85);
+                ctx.lineTo(240, 70);
+                ctx.lineTo(250, 85);
+                ctx.fill();
+
+                // Meadow ground
+                const groundGradient = ctx.createLinearGradient(0, 180, 0, canvas.height);
+                groundGradient.addColorStop(0, '#A8C256');
+                groundGradient.addColorStop(0.5, '#8FA84D');
+                groundGradient.addColorStop(1, '#6B7D3A');
+                ctx.fillStyle = groundGradient;
+                ctx.fillRect(0, 180, canvas.width, canvas.height - 180);
+
+                // Wildflowers
+                for (let i = 0; i < 30; i++) {
+                    const fx = (i * 37) % canvas.width;
+                    const fy = 200 + (i * 23) % 80;
+                    ctx.fillStyle = i % 3 === 0 ? '#FFD700' : i % 3 === 1 ? '#FF69B4' : '#9370DB';
+                    ctx.beginPath();
+                    ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Realistic moose
+                const mooseX = 180 + Math.sin(time * 0.3) * 40;
+                const walkCycle = Math.sin(time * 2);
+                const bobY = Math.abs(Math.sin(time * 4)) * 2;
+
+                ctx.save();
+                ctx.translate(mooseX, 200 - bobY);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.ellipse(0, 50, 50, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Body with gradient for 3D effect
+                const bodyGradient = ctx.createLinearGradient(-30, -20, 30, 20);
+                bodyGradient.addColorStop(0, '#3D2817');
+                bodyGradient.addColorStop(0.5, '#5C4033');
+                bodyGradient.addColorStop(1, '#3D2817');
+                ctx.fillStyle = bodyGradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 45, 28, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Legs with walk cycle
+                ctx.strokeStyle = '#3D2817';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                
+                const legPositions = [
+                    { x: -20, phase: 0 },
+                    { x: -10, phase: Math.PI },
+                    { x: 10, phase: 0 },
+                    { x: 20, phase: Math.PI }
+                ];
+
+                legPositions.forEach(leg => {
+                    const legSwing = Math.sin(time * 4 + leg.phase) * 8;
+                    ctx.beginPath();
+                    ctx.moveTo(leg.x, 15);
+                    ctx.lineTo(leg.x + legSwing, 45);
+                    ctx.stroke();
+                });
+
+                // Neck
+                ctx.fillStyle = '#5C4033';
+                ctx.fillRect(35, -15, 15, 30);
+
+                // Head with detail
+                const headGradient = ctx.createRadialGradient(55, -10, 5, 55, -10, 18);
+                headGradient.addColorStop(0, '#6B5647');
+                headGradient.addColorStop(1, '#4A3B2F');
+                ctx.fillStyle = headGradient;
+                ctx.beginPath();
+                ctx.ellipse(55, -10, 18, 16, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Snout
+                ctx.fillStyle = '#3D2817';
+                ctx.beginPath();
+                ctx.ellipse(68, -8, 10, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(60, -15, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(61, -16, 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Antlers - more realistic
+                ctx.strokeStyle = '#6B5647';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                
+                // Left antler
+                ctx.beginPath();
+                ctx.moveTo(50, -20);
+                ctx.lineTo(45, -35);
+                ctx.lineTo(42, -40);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(45, -35);
+                ctx.lineTo(40, -38);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(45, -35);
+                ctx.lineTo(48, -42);
+                ctx.stroke();
+
+                // Right antler
+                ctx.beginPath();
+                ctx.moveTo(58, -20);
+                ctx.lineTo(63, -35);
+                ctx.lineTo(66, -40);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(63, -35);
+                ctx.lineTo(68, -38);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(63, -35);
+                ctx.lineTo(60, -42);
+                ctx.stroke();
+
+                // Ear
+                ctx.fillStyle = '#5C4033';
+                ctx.beginPath();
+                ctx.ellipse(52, -18, 5, 8, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            },
+
+            animateFirefly(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Night sky gradient
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                skyGradient.addColorStop(0, '#0B0B2B');
+                skyGradient.addColorStop(0.5, '#1A1A3E');
+                skyGradient.addColorStop(1, '#0F0F1E');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Realistic stars with different sizes and twinkle
+                for (let i = 0; i < 80; i++) {
+                    const x = (i * 73) % canvas.width;
+                    const y = (i * 137) % (canvas.height * 0.7);
+                    const size = (i % 3) + 1;
+                    const twinkle = Math.sin(time * (2 + i * 0.1)) * 0.3 + 0.7;
+                    
+                    ctx.fillStyle = `rgba(${200 + i % 55}, ${200 + i % 55}, 255, ${twinkle})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Realistic moon with craters
+                const moonX = canvas.width - 80;
+                const moonY = 60;
+                
+                // Moon glow
+                const moonGlow = ctx.createRadialGradient(moonX, moonY, 20, moonX, moonY, 45);
+                moonGlow.addColorStop(0, 'rgba(255, 250, 230, 0.3)');
+                moonGlow.addColorStop(1, 'rgba(255, 250, 230, 0)');
+                ctx.fillStyle = moonGlow;
+                ctx.fillRect(moonX - 45, moonY - 45, 90, 90);
+
+                // Moon surface
+                const moonGradient = ctx.createRadialGradient(moonX - 10, moonY - 10, 5, moonX, moonY, 30);
+                moonGradient.addColorStop(0, '#FFF8DC');
+                moonGradient.addColorStop(1, '#E8DCC0');
+                ctx.fillStyle = moonGradient;
+                ctx.beginPath();
+                ctx.arc(moonX, moonY, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Craters
+                ctx.fillStyle = 'rgba(200, 190, 170, 0.4)';
+                ctx.beginPath();
+                ctx.arc(moonX - 8, moonY + 5, 6, 0, Math.PI * 2);
+                ctx.arc(moonX + 10, moonY - 8, 4, 0, Math.PI * 2);
+                ctx.arc(moonX + 5, moonY + 12, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Realistic fireflies with trails and proper glow
+                if (!scene.fireflies) {
+                    scene.fireflies = [];
+                    for (let i = 0; i < 25; i++) {
+                        scene.fireflies.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height * 0.8,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: (Math.random() - 0.5) * 0.3,
+                            phase: Math.random() * Math.PI * 2,
+                            brightness: 0
+                        });
+                    }
+                }
+
+                scene.fireflies.forEach((firefly, i) => {
+                    // Movement
+                    firefly.x += firefly.vx + Math.sin(time + i) * 0.3;
+                    firefly.y += firefly.vy + Math.cos(time * 0.7 + i) * 0.2;
+                    
+                    // Wrap around
+                    if (firefly.x < 0) firefly.x = canvas.width;
+                    if (firefly.x > canvas.width) firefly.x = 0;
+                    if (firefly.y < 50) firefly.y = 50;
+                    if (firefly.y > canvas.height - 50) firefly.y = canvas.height - 50;
+
+                    // Realistic pulsing
+                    const pulse = Math.sin(time * 3 + firefly.phase);
+                    firefly.brightness = pulse > 0.7 ? (pulse - 0.7) * 3 : 0;
+
+                    if (firefly.brightness > 0) {
+                        // Glow aura
+                        const glowSize = 20 * firefly.brightness;
+                        const glowGradient = ctx.createRadialGradient(
+                            firefly.x, firefly.y, 0,
+                            firefly.x, firefly.y, glowSize
+                        );
+                        glowGradient.addColorStop(0, `rgba(255, 255, 150, ${firefly.brightness * 0.8})`);
+                        glowGradient.addColorStop(0.3, `rgba(255, 255, 100, ${firefly.brightness * 0.4})`);
+                        glowGradient.addColorStop(1, 'rgba(255, 255, 100, 0)');
+                        ctx.fillStyle = glowGradient;
+                        ctx.fillRect(
+                            firefly.x - glowSize,
+                            firefly.y - glowSize,
+                            glowSize * 2,
+                            glowSize * 2
+                        );
+
+                        // Firefly body
+                        ctx.fillStyle = `rgba(255, 255, 200, ${0.9 + firefly.brightness * 0.1})`;
+                        ctx.beginPath();
+                        ctx.arc(firefly.x, firefly.y, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Bright core
+                        ctx.fillStyle = `rgba(255, 255, 255, ${firefly.brightness})`;
+                        ctx.beginPath();
+                        ctx.arc(firefly.x, firefly.y, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // Dim firefly
+                        ctx.fillStyle = 'rgba(100, 100, 80, 0.6)';
+                        ctx.beginPath();
+                        ctx.arc(firefly.x, firefly.y, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                // Tree silhouettes
+                ctx.fillStyle = '#000';
+                for (let i = 0; i < 5; i++) {
+                    const treeX = i * 90 + 20;
+                    ctx.fillRect(treeX, 200, 25, 100);
+                    ctx.beginPath();
+                    ctx.moveTo(treeX + 12, 150);
+                    ctx.lineTo(treeX - 20, 210);
+                    ctx.lineTo(treeX + 45, 210);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Ground
+                ctx.fillStyle = '#0A0A15';
+                ctx.fillRect(0, 250, canvas.width, 50);
+            },
+
+            animateSquirrel(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Sky
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.6);
+                skyGradient.addColorStop(0, '#87CEEB');
+                skyGradient.addColorStop(1, '#B8D4E8');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Ground
+                const groundGradient = ctx.createLinearGradient(0, 220, 0, canvas.height);
+                groundGradient.addColorStop(0, '#6B8E4E');
+                groundGradient.addColorStop(1, '#4A6332');
+                ctx.fillStyle = groundGradient;
+                ctx.fillRect(0, 220, canvas.width, canvas.height - 220);
+
+                // Realistic tree trunk
+                const trunkGradient = ctx.createLinearGradient(170, 0, 230, 0);
+                trunkGradient.addColorStop(0, '#3D2817');
+                trunkGradient.addColorStop(0.3, '#5C4033');
+                trunkGradient.addColorStop(0.7, '#4A3B2F');
+                trunkGradient.addColorStop(1, '#2D1810');
+                ctx.fillStyle = trunkGradient;
+                ctx.fillRect(170, 30, 60, 270);
+
+                // Bark texture
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 15; i++) {
+                    const y = 40 + i * 18;
+                    ctx.beginPath();
+                    ctx.moveTo(172, y);
+                    ctx.quadraticCurveTo(200, y + 5, 228, y);
+                    ctx.stroke();
+                }
+
+                // Branches with realistic shape
+                const branches = [
+                    { startX: 180, startY: 100, endX: 130, endY: 115, thick: 15 },
+                    { startX: 220, startY: 140, endX: 270, endY: 150, thick: 12 },
+                    { startX: 185, startY: 180, endX: 140, endY: 195, thick: 10 }
+                ];
+
+                branches.forEach(branch => {
+                    ctx.strokeStyle = '#4A3B2F';
+                    ctx.lineWidth = branch.thick;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(branch.startX, branch.startY);
+                    ctx.lineTo(branch.endX, branch.endY);
+                    ctx.stroke();
+                });
+
+                // Foliage clusters
+                const foliagePositions = [
+                    { x: 200, y: 25 },
+                    { x: 180, y: 35 },
+                    { x: 220, y: 30 },
+                    { x: 190, y: 50 },
+                    { x: 210, y: 45 }
+                ];
+
+                foliagePositions.forEach((pos, i) => {
+                    const sway = Math.sin(time + i) * 3;
+                    const leafGradient = ctx.createRadialGradient(
+                        pos.x + sway, pos.y, 5,
+                        pos.x + sway, pos.y, 25
+                    );
+                    leafGradient.addColorStop(0, '#4A7C3E');
+                    leafGradient.addColorStop(1, '#2D4A3E');
+                    ctx.fillStyle = leafGradient;
+                    ctx.beginPath();
+                    ctx.arc(pos.x + sway, pos.y, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Realistic squirrel
+                const squirrelProgress = (time * 0.4) % 2;
+                let squirrelX, squirrelY;
+                
+                if (squirrelProgress < 1) {
+                    // Climbing up
+                    squirrelX = 195;
+                    squirrelY = 220 - squirrelProgress * 100;
+                } else {
+                    // On branch
+                    squirrelX = 140 + (squirrelProgress - 1) * 40;
+                    squirrelY = 115;
+                }
+
+                ctx.save();
+                ctx.translate(squirrelX, squirrelY);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.ellipse(0, 25, 18, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Body with fur texture
+                const bodyGradient = ctx.createRadialGradient(-3, -2, 5, 0, 0, 15);
+                bodyGradient.addColorStop(0, '#A0826D');
+                bodyGradient.addColorStop(1, '#8B6F47');
+                ctx.fillStyle = bodyGradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Head
+                const headGradient = ctx.createRadialGradient(15, -5, 3, 13, -5, 10);
+                headGradient.addColorStop(0, '#B5957A');
+                headGradient.addColorStop(1, '#9A7B5A');
+                ctx.fillStyle = headGradient;
+                ctx.beginPath();
+                ctx.ellipse(13, -5, 10, 9, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ears
+                ctx.fillStyle = '#8B6F47';
+                ctx.beginPath();
+                ctx.moveTo(8, -12);
+                ctx.lineTo(6, -18);
+                ctx.lineTo(11, -14);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(16, -12);
+                ctx.lineTo(14, -18);
+                ctx.lineTo(19, -14);
+                ctx.closePath();
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(18, -7, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.beginPath();
+                ctx.arc(19, -8, 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Nose
+                ctx.fillStyle = '#3D2817';
+                ctx.beginPath();
+                ctx.arc(22, -3, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Front paws
+                ctx.fillStyle = '#8B6F47';
+                ctx.beginPath();
+                ctx.ellipse(8, 8, 4, 6, 0.3, 0, Math.PI * 2);
+                ctx.ellipse(16, 8, 4, 6, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bushy tail with layers
+                const tailBob = Math.sin(time * 2) * 5;
+                for (let i = 0; i < 3; i++) {
+                    const alpha = 0.7 - i * 0.2;
+                    ctx.fillStyle = `rgba(139, 111, 71, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        -15 - i * 2,
+                        -10 + tailBob - i * 3,
+                        12 + i * 2,
+                        18 + i * 3,
+                        -0.5,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                // Acorn on ground
+                ctx.fillStyle = '#8B6F47';
+                ctx.beginPath();
+                ctx.ellipse(280, 270, 6, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#6B5647';
+                ctx.beginPath();
+                ctx.ellipse(280, 265, 5, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            },
+
+            animateMushroom(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Dark forest background
+                const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGradient.addColorStop(0, '#1A2F1A');
+                bgGradient.addColorStop(1, '#0D1F0D');
+                ctx.fillStyle = bgGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Misty atmosphere
+                ctx.fillStyle = 'rgba(150, 180, 160, 0.1)';
+                for (let i = 0; i < 5; i++) {
+                    const y = (i * 50 + time * 10) % canvas.height;
+                    ctx.fillRect(0, y, canvas.width, 30);
+                }
+
+                // Forest floor with moss
+                const groundGradient = ctx.createLinearGradient(0, 240, 0, canvas.height);
+                groundGradient.addColorStop(0, '#3A4A2F');
+                groundGradient.addColorStop(1, '#2A3A1F');
+                ctx.fillStyle = groundGradient;
+                ctx.fillRect(0, 240, canvas.width, canvas.height - 240);
+
+                // Realistic mushrooms
+                const mushrooms = [
+                    { x: 60, size: 1.2, type: 'red', y: 240 },
+                    { x: 120, size: 0.8, type: 'brown', y: 255 },
+                    { x: 180, size: 1.5, type: 'red', y: 230 },
+                    { x: 220, size: 0.6, type: 'brown', y: 265 },
+                    { x: 280, size: 1.0, type: 'red', y: 245 },
+                    { x: 340, size: 0.9, type: 'brown', y: 250 },
+                    { x: 90, size: 0.7, type: 'red', y: 258 },
+                    { x: 250, size: 0.5, type: 'brown', y: 268 }
+                ];
+
+                mushrooms.forEach((mushroom, i) => {
+                    const bob = Math.sin(time * 0.5 + i) * 2;
+                    const baseY = mushroom.y + bob;
+                    const stemHeight = 20 * mushroom.size;
+                    const capRadius = 15 * mushroom.size;
+
+                    ctx.save();
+                    ctx.translate(mushroom.x, baseY);
+
+                    // Stem with gradient
+                    const stemGradient = ctx.createLinearGradient(-5 * mushroom.size, 0, 5 * mushroom.size, 0);
+                    stemGradient.addColorStop(0, '#D4C4B0');
+                    stemGradient.addColorStop(0.5, '#E8DCC8');
+                    stemGradient.addColorStop(1, '#C4B4A0');
+                    ctx.fillStyle = stemGradient;
+                    ctx.fillRect(-5 * mushroom.size, 0, 10 * mushroom.size, stemHeight);
+
+                    // Stem texture
+                    ctx.fillStyle = 'rgba(180, 170, 160, 0.3)';
+                    for (let j = 0; j < 3; j++) {
+                        ctx.fillRect(-4 * mushroom.size, j * 7, 8 * mushroom.size, 1);
+                    }
+
+                    // Cap shadow under
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 2, capRadius, 5 * mushroom.size, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Cap
+                    ctx.translate(0, 0);
+                    const capGradient = ctx.createRadialGradient(
+                        -5 * mushroom.size, -5 * mushroom.size, 0,
+                        0, 0, capRadius
+                    );
+
+                    if (mushroom.type === 'red') {
+                        capGradient.addColorStop(0, '#D95D39');
+                        capGradient.addColorStop(1, '#A8432A');
+                        ctx.fillStyle = capGradient;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, capRadius, Math.PI, 0);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // White spots
+                        ctx.fillStyle = '#F5F5DC';
+                        const spots = [
+                            { x: -8, y: -5, r: 3 },
+                            { x: 3, y: -8, r: 2.5 },
+                            { x: 8, y: -3, r: 2 },
+                            { x: -2, y: -2, r: 1.5 }
+                        ];
+                        spots.forEach(spot => {
+                            ctx.beginPath();
+                            ctx.arc(spot.x * mushroom.size, spot.y * mushroom.size, spot.r * mushroom.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        });
+                    } else {
+                        capGradient.addColorStop(0, '#8B6F47');
+                        capGradient.addColorStop(1, '#5C4033');
+                        ctx.fillStyle = capGradient;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, capRadius, Math.PI, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // Gills under cap
+                    ctx.strokeStyle = 'rgba(139, 111, 71, 0.5)';
+                    ctx.lineWidth = 1;
+                    for (let g = -capRadius; g < capRadius; g += 3) {
+                        ctx.beginPath();
+                        ctx.moveTo(g, 2);
+                        ctx.lineTo(g, 8 * mushroom.size);
+                        ctx.stroke();
+                    }
+
+                    ctx.restore();
+                });
+
+                // Glowing spores with proper lighting
+                if (!scene.spores) {
+                    scene.spores = [];
+                    for (let i = 0; i < 30; i++) {
+                        scene.spores.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            vy: -0.2 - Math.random() * 0.3,
+                            brightness: Math.random()
+                        });
+                    }
+                }
+
+                scene.spores.forEach((spore, i) => {
+                    spore.y += spore.vy;
+                    if (spore.y < 0) {
+                        spore.y = canvas.height;
+                        spore.x = Math.random() * canvas.width;
+                    }
+
+                    const glow = Math.sin(time * 2 + i) * 0.3 + 0.7;
+                    const size = 2 + Math.sin(time + i) * 0.5;
+
+                    // Glow aura
+                    const glowGradient = ctx.createRadialGradient(spore.x, spore.y, 0, spore.x, spore.y, 10);
+                    glowGradient.addColorStop(0, `rgba(200, 255, 180, ${glow * 0.4})`);
+                    glowGradient.addColorStop(1, 'rgba(200, 255, 180, 0)');
+                    ctx.fillStyle = glowGradient;
+                    ctx.fillRect(spore.x - 10, spore.y - 10, 20, 20);
+
+                    // Spore
+                    ctx.fillStyle = `rgba(220, 255, 200, ${0.6 + glow * 0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(spore.x, spore.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Fallen leaves
+                ctx.fillStyle = 'rgba(139, 90, 43, 0.6)';
+                for (let i = 0; i < 15; i++) {
+                    const x = (i * 33) % canvas.width;
+                    const y = 245 + (i * 17) % 45;
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(i);
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 5, 3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            },
+
+            animateWaterfall(scene) {
+                const ctx = scene.ctx;
+                const canvas = scene.canvas;
+                const time = Date.now() / 1000;
+
+                // Sky with depth
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
+                skyGradient.addColorStop(0, '#5A8FC4');
+                skyGradient.addColorStop(1, '#89B4D8');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Rocky cliffs with texture
+                const leftCliffGradient = ctx.createLinearGradient(0, 0, 150, 0);
+                leftCliffGradient.addColorStop(0, '#4A4A4A');
+                leftCliffGradient.addColorStop(0.5, '#6A6A6A');
+                leftCliffGradient.addColorStop(1, '#3A3A3A');
+                ctx.fillStyle = leftCliffGradient;
+                ctx.fillRect(0, 0, 150, 230);
+
+                const rightCliffGradient = ctx.createLinearGradient(280, 0, 400, 0);
+                rightCliffGradient.addColorStop(0, '#3A3A3A');
+                rightCliffGradient.addColorStop(0.5, '#5A5A5A');
+                rightCliffGradient.addColorStop(1, '#2A2A2A');
+                ctx.fillStyle = rightCliffGradient;
+                ctx.fillRect(280, 0, 120, 210);
+
+                // Rock texture
+                ctx.fillStyle = 'rgba(80, 80, 80, 0.3)';
+                for (let i = 0; i < 20; i++) {
+                    ctx.fillRect(10 + (i * 7) % 130, (i * 23) % 220, 15, 2);
+                    ctx.fillRect(285 + (i * 9) % 100, (i * 19) % 200, 12, 2);
+                }
+
+                // Moss on cliffs
+                ctx.fillStyle = 'rgba(60, 100, 60, 0.4)';
+                ctx.fillRect(120, 150, 30, 80);
+                ctx.fillRect(280, 130, 25, 80);
+
+                // Realistic water particles
+                if (!scene.waterDrops) {
+                    scene.waterDrops = [];
+                    for (let i = 0; i < 100; i++) {
+                        scene.waterDrops.push({
+                            x: 150 + Math.random() * 130,
+                            y: Math.random() * 230,
+                            speed: 3 + Math.random() * 4,
+                            size: 2 + Math.random() * 3,
+                            opacity: 0.4 + Math.random() * 0.4
+                        });
+                    }
+                }
+
+                scene.waterDrops.forEach(drop => {
+                    drop.y += drop.speed;
+                    if (drop.y > 230) {
+                        drop.y = 0;
+                        drop.x = 150 + Math.random() * 130;
+                    }
+
+                    // Water drop with transparency
+                    ctx.fillStyle = `rgba(200, 230, 255, ${drop.opacity})`;
+                    ctx.beginPath();
+                    ctx.ellipse(drop.x, drop.y, drop.size * 0.7, drop.size, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Highlight
+                    ctx.fillStyle = `rgba(255, 255, 255, ${drop.opacity * 0.6})`;
+                    ctx.beginPath();
+                    ctx.arc(drop.x - drop.size * 0.3, drop.y - drop.size * 0.3, drop.size * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Mist at bottom
+                const mistGradient = ctx.createLinearGradient(0, 200, 0, 240);
+                mistGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                mistGradient.addColorStop(1, 'rgba(255, 255, 255, 0.6)');
+                ctx.fillStyle = mistGradient;
+                ctx.fillRect(0, 200, canvas.width, 40);
+
+                // Pool with realistic water
+                const poolGradient = ctx.createLinearGradient(0, 230, 0, canvas.height);
+                poolGradient.addColorStop(0, '#4A90B8');
+                poolGradient.addColorStop(0.5, '#357A9E');
+                poolGradient.addColorStop(1, '#2A5A78');
+                ctx.fillStyle = poolGradient;
+                ctx.fillRect(0, 230, canvas.width, canvas.height - 230);
+
+                // Water surface reflections
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                for (let i = 0; i < 3; i++) {
+                    const y = 235 + i * 15 + Math.sin(time * 2 + i) * 3;
+                    ctx.fillRect(0, y, canvas.width, 2);
+                }
+
+                // Splash particles
+                for (let i = 0; i < 8; i++) {
+                    const angle = (time * 2 + i * Math.PI / 4) % (Math.PI * 2);
+                    const dist = 30 + Math.sin(time * 3 + i) * 15;
+                    const x = 200 + Math.cos(angle) * dist;
+                    const y = 235 + Math.sin(angle) * dist * 0.5;
+                    
+                    ctx.fillStyle = 'rgba(200, 230, 255, 0.6)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Ripples with proper wave animation
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 5; i++) {
+                    const rippleRadius = ((time * 40 + i * 25) % 150);
+                    const opacity = 1 - (rippleRadius / 150);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
+                    ctx.beginPath();
+                    ctx.ellipse(200, 240, rippleRadius, rippleRadius * 0.3, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Foam
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                for (let i = 0; i < 15; i++) {
+                    const x = 150 + Math.sin(time + i) * 60 + i * 10;
+                    const y = 232 + Math.cos(time * 2 + i) * 3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2 + Math.random() * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
